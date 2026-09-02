@@ -8,8 +8,9 @@
 
 ## 必读文件（开始任何任务前）
 
-1. **CUSTOMIZATIONS.md**（仓库根目录）——自定义改动清单，必须先读
-2. **README.md**——项目说明
+1. **CUSTOMIZATIONS/README.md**——自定义开发机制的完整规则（冲突策略、标记格式、frontmatter 职责）
+2. **CUSTOMIZATIONS/registry.md**——自定义改动登记账本
+3. **README.md**——项目说明
 
 ## 技术栈
 
@@ -36,42 +37,19 @@ pnpm run test       # Vitest 测试
 
 | 分支 | 用途 | 谁可以写入 |
 |------|------|-----------|
-| `upstream/main` | 跟踪上游 chatboxai/chatbox 的 main 分支 | 只读（仅 sync 脚本可更新） |
-| `vendor/<version-line>` | 上游版本基线（如 `vendor/v1.22.x`） | 只读（仅 sync 脚本可更新） |
+| `upstream/main` | 跟踪上游 chatboxai/chatbox | 只读（仅 sync 脚本可更新） |
+| `vendor/<version-line>` | 上游版本基线 | 只读（仅 sync 脚本可更新） |
 | `custom/main` | 自定义开发主分支 | AI Agent 开发合并 |
 | `feature/<name>` | 功能开发分支 | AI Agent 临时分支 |
 | `release/<tag>` | 发布分支 | release skill 管理 |
 
-- **remote**：
-  - `origin` → 你的自定义 GitHub 仓库
-  - `upstream` → https://github.com/chatboxai/chatbox.git
+- **remote**：`origin` → 自定义 GitHub 仓库；`upstream` → https://github.com/chatboxai/chatbox.git
 - **禁止操作**：
   - 禁止手动 `git merge` 合并 vendor 到 custom/main（必须通过 `chatbox-merge-upstream` skill）
   - 禁止 `git rebase` 改写 custom/main 的历史
   - 禁止直接 push 到 vendor 分支
 
-## 上游合并冲突解决规则
-
-合并上游遇到冲突时必须遵循（按优先级从高到低，与 CUSTOMIZATIONS.md 的冲突策略速查一致）：
-
-- 文件在 `CUSTOMIZATIONS.md` 冲突策略中标注为 `keep-ours` → 保留自定义版本
-- 标注为 `keep-theirs` → 使用上游版本
-- 标注为 `merge-manual` 或未标注 → 读取该文件相关自定义条目，逐项判断后手动合并，**合并后必须测试**
-- `CUSTOMIZATIONS.md` 本身冲突 → 必须手动合并，合并后检查 frontmatter 合法性
-- `pnpm-lock.yaml` → 接受上游版本后 `pnpm install` 重新生成
-
-## 合并/发布前测试要求
-
-合并上游完成后、发布前必须运行：
-
-```bash
-pnpm install        # 依赖可能有变化
-pnpm run lint
-pnpm run build
-pnpm run test       # 如有
-```
-
-## 自定义代码规范
+## 自定义代码规范（硬约束）
 
 1. **代码隔离优先**：新功能尽量放在 `CUSTOMIZATIONS/src/` 下，通过独立模块挂载
 2. **修改上游文件时必须加标记**：
@@ -80,8 +58,10 @@ pnpm run test       # 如有
    ... 自定义代码 ...
    // [CUSTOM-END] CUSTOM-YYYYMMDD-NNN
    ```
-3. **每次改动必须记录**：完成后调用 `chatbox-record-change` skill 更新 CUSTOMIZATIONS.md
-4. **不要删除 CUSTOMIZATIONS.md 中的历史条目**（标记 deprecated 即可）
+3. **每次改动必须记录**：完成后调用 `chatbox-record-change` skill 更新 CUSTOMIZATIONS/registry.md
+4. **不要删除 registry.md 中的历史条目**（标记 deprecated 即可）
+5. **合并冲突**：按 CUSTOMIZATIONS/README.md 的冲突策略速查处理（keep-ours / keep-theirs / merge-manual / pnpm-lock 重新生成）
+6. **合并上游完成后、发布前**必须运行 `pnpm install && pnpm run lint && pnpm run build && pnpm run test`
 
 ## AI Skills 触发条件
 
@@ -95,19 +75,6 @@ Skill 定义位于 `.agents/skills/`（ZCode 原生发现路径，Claude/Cursor 
 
 详细触发场景见各 skill 的 `.agents/skills/<name>/SKILL.md`。
 
-## 辅助脚本
-
-```bash
-# 初始化仓库（首次 clone 后）
-pwsh ./CUSTOMIZATIONS/scripts/init-repo.ps1 -BaseVersion v1.22.3
-
-# 查看当前自定义改动
-pwsh ./CUSTOMIZATIONS/scripts/list-custom.ps1
-
-# 同步 vendor 分支到指定版本
-pwsh ./CUSTOMIZATIONS/scripts/sync-vendor.ps1 -Version v1.22.4 -Push
-```
-
 ## 项目结构速查
 
 ```
@@ -115,7 +82,11 @@ src/main/        # Electron 主进程
 src/renderer/    # React 渲染进程（UI）
 src/preload/     # Electron preload
 src/shared/      # 共享工具
-CUSTOMIZATIONS/  # 自定义代码（新增文件放这里）
+CUSTOMIZATIONS/  # 自定义开发内容（规则、账本、代码、脚本）
+├── README.md    # 机制与规则唯一完整版
+├── registry.md  # 改动登记账本
+├── release-notes/
+├── src/ patches/ scripts/
 .agents/skills/  # AI Agent 项目级 skills
 ```
 

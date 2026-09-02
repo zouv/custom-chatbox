@@ -1,14 +1,6 @@
 ---
 name: "chatbox-merge-upstream"
 description: "Merge upstream chatboxai/chatbox updates into custom repository. Invoke when user asks to sync/merge/update from upstream, upgrade to a new version, or pull upstream changes."
-allowed-tools:
-  - Read
-  - Write
-  - SearchReplace
-  - Grep
-  - Glob
-  - LS
-  - RunCommand
 ---
 
 # Chatbox 上游合并 Skill
@@ -65,13 +57,13 @@ git remote -v
 git remote add upstream https://github.com/chatboxai/chatbox.git
 ```
 
-### 3. 读取 CUSTOMIZATIONS.md
+### 3. 读取 CUSTOMIZATIONS/registry.md
 
 ```
-Read <repo-root>/CUSTOMIZATIONS.md
+Read <repo-root>/CUSTOMIZATIONS/registry.md
 ```
 
-通读所有 `active` 状态的自定义改动条目，特别是 `冲突策略` 列。这是冲突解决的依据。
+通读所有 `active` 状态的自定义改动条目，特别是 `冲突策略` 列（完整冲突策略优先级表见 `CUSTOMIZATIONS/README.md`）。这是冲突解决的依据。
 
 ### 4. 获取上游最新信息
 
@@ -97,8 +89,8 @@ git tag -l "v*" --sort=-v:refname | head -20
 当前自定义基线版本：<vendor 分支当前指向的 tag/commit>
 目标上游版本：<target>
 预计改动文件数：<通过 git diff --stat vendor/vX.Y.x <target> 估算>
-自定义改动条目数：<CUSTOMIZATIONS.md 中 active 条目数>
-已知冲突风险文件：<对比 CUSTOMIZATIONS.md 中 modified-upstream 的文件与上游变更文件的交集>
+自定义改动条目数：<CUSTOMIZATIONS/registry.md 中 active 条目数>
+已知冲突风险文件：<对比 CUSTOMIZATIONS/registry.md 中 modified-upstream 的文件与上游变更文件的交集>
 ```
 
 ### A-2. 更新 vendor 分支
@@ -140,7 +132,7 @@ git merge --no-edit vendor/v<major>.<minor>.x
 
 **这是 AI Agent 最关键的步骤。严格按以下优先级处理：**
 
-#### 阶段 1：自动解析（根据 CUSTOMIZATIONS.md 冲突策略）
+#### 阶段 1：自动解析（根据 CUSTOMIZATIONS/registry.md 冲突策略）
 
 对于每个冲突文件，运行冲突检测并根据策略处理：
 
@@ -151,7 +143,7 @@ git diff --name-only --diff-filter=U
 
 对每个冲突文件：
 
-1. **查找 CUSTOMIZATIONS.md 中的冲突策略**：
+1. **查找 CUSTOMIZATIONS/registry.md 中的冲突策略**：
    - 如果该文件对应条目标记为 `keep-ours`：
      ```bash
      git checkout --ours <file>
@@ -191,7 +183,7 @@ git diff --name-only --diff-filter=U
 - 上游完全重构了某个被大量自定义修改的模块（找不到 `[CUSTOM-BEGIN]` 标记的对应位置）
 - package.json/pnpm-lock.yaml 存在复杂依赖冲突
 - 配置文件（electron-builder.yml、tsconfig.json 等）存在结构性冲突
-- CUSTOMIZATIONS.md 自身存在冲突（必须人工决策）
+- CUSTOMIZATIONS/registry.md 自身存在冲突（必须人工决策）
 
 报告格式：
 ```
@@ -200,7 +192,7 @@ git diff --name-only --diff-filter=U
 原因：<为什么 AI 无法自动解决>
 建议：<提供两个选项的关键差异，让用户选择>
 上游改动概要：<该文件上游改了什么>
-我们的自定义概要：<CUSTOMIZATIONS.md 中记录了什么>
+我们的自定义概要：<CUSTOMIZATIONS/registry.md 中记录了什么>
 ```
 
 ### A-5. 合并后验证
@@ -222,9 +214,9 @@ pnpm run lint
 pnpm run build
 ```
 
-如果 lint 或 build 失败，AI 必须修复错误（参考 CUSTOMIZATIONS.md 了解哪些是自定义代码需要适配）。修复后再继续。
+如果 lint 或 build 失败，AI 必须修复错误（参考 CUSTOMIZATIONS/registry.md 了解哪些是自定义代码需要适配）。修复后再继续。
 
-### A-6. 更新 CUSTOMIZATIONS.md 并完成合并
+### A-6. 更新 CUSTOMIZATIONS/registry.md 并完成合并
 
 ```bash
 # 检查所有 active 条目是否仍然有效
@@ -289,7 +281,7 @@ git checkout -b custom/main-v<new> vendor/v<new-major>.<new-minor>.x
 
 ### B-3. Cherry-pick 自定义提交
 
-按照 CUSTOMIZATIONS.md 中记录的顺序，**逐个 cherry-pick 自定义提交**：
+按照 CUSTOMIZATIONS/registry.md 中记录的顺序，**逐个 cherry-pick 自定义提交**：
 
 ```bash
 # 获取所有自定义提交的列表（从旧 vendor 分叉点到旧 custom/main）
@@ -305,7 +297,7 @@ git cherry-pick <commit-hash>
 如果 cherry-pick 产生冲突：
 1. 优先参考 `[CUSTOM-BEGIN]` 标记定位自定义代码位置
 2. 上游可能重构了文件结构，根据函数/组件名找到新位置
-3. 如果该自定义功能在新版本中已被原生支持，跳过该 cherry-pick 并将 CUSTOMIZATIONS.md 中对应条目标记为 `merged-upstream`
+3. 如果该自定义功能在新版本中已被原生支持，跳过该 cherry-pick 并将 CUSTOMIZATIONS/registry.md 中对应条目标记为 `merged-upstream`
 4. 如果无法解决，记录该提交并暂停，向用户报告
 
 ### B-4. 适配修复
@@ -318,7 +310,7 @@ pnpm run lint
 pnpm run build
 ```
 
-修复所有编译错误和 lint 错误。对于上游 API 变更导致的自定义代码失效，逐个适配并更新 CUSTOMIZATIONS.md 中对应条目的"基于上游版本"字段。
+修复所有编译错误和 lint 错误。对于上游 API 变更导致的自定义代码失效，逐个适配并更新 CUSTOMIZATIONS/registry.md 中对应条目的"基于上游版本"字段。
 
 ### B-5. 切换主分支
 
@@ -329,7 +321,7 @@ git branch -m custom/main custom/main-v<old>-archive
 # 将新分支设为 custom/main
 git branch -m custom/main-v<new> custom/main
 
-# 更新 CUSTOMIZATIONS.md 头部的当前版本信息
+# 更新 CUSTOMIZATIONS/registry.md 头部的当前版本信息
 # 添加一条升级记录到变更日志
 
 git push origin custom/main vendor/v<new-major>.<new-minor>.x --force-with-lease
@@ -342,7 +334,7 @@ git push origin custom/main-v<old>-archive
 
 无论流程 A 还是 B，完成后必须：
 
-1. **更新 CUSTOMIZATIONS.md 头部元数据**：
+1. **更新 CUSTOMIZATIONS/registry.md 头部元数据**：
    - `current_upstream_version` 字段更新为新版本
    - `last_merge_date` 更新为当前日期
    - 添加一条合并记录
@@ -380,7 +372,7 @@ git push origin custom/main --force-with-lease
 ## 重要约束
 
 1. **永远不要在 custom/main 上直接 merge**：必须通过临时 `merge/upstream-*` 分支进行。
-2. **永远不要用 rebase 处理上游合并**：rebase 会改写自定义提交历史，破坏 CUSTOMIZATIONS.md 的追踪。
+2. **永远不要用 rebase 处理上游合并**：rebase 会改写自定义提交历史，破坏 CUSTOMIZATIONS/registry.md 的追踪。
 3. **vendor 分支上不做任何自定义修改**：vendor 分支是上游的纯净镜像，只接受来自 upstream 的 merge。
 4. **pnpm-lock.yaml 冲突处理**：发生冲突时，先接受上游版本，然后删除 node_modules 重新 `pnpm install` 生成新的 lock 文件，不要手动编辑 lock 文件。
-5. **不要删除 CUSTOMIZATIONS.md 中的任何历史条目**：跨版本升级时需要参考所有历史改动。
+5. **不要删除 CUSTOMIZATIONS/registry.md 中的任何历史条目**：跨版本升级时需要参考所有历史改动。

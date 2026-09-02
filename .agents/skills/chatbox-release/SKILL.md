@@ -1,14 +1,6 @@
 ---
 name: "chatbox-release"
 description: "Build and publish a release of the custom chatbox build to GitHub. Invoke when user asks to build, package, publish, release, or create a new version/tag of the custom chatbox."
-allowed-tools:
-  - Read
-  - Write
-  - SearchReplace
-  - Grep
-  - Glob
-  - LS
-  - RunCommand
 ---
 
 # Chatbox 自定义版本发布 Skill
@@ -34,7 +26,7 @@ allowed-tools:
 3. **是否预发布**：默认否。如需 beta 标记，版本后缀使用 `-custom.N-beta`。
 
 4. **Release 说明内容**：
-   - 如果用户没有提供，AI 自动根据 CUSTOMIZATIONS.md 和近期 commit 生成
+   - 如果用户没有提供，AI 自动根据 CUSTOMIZATIONS/registry.md 和近期 commit 生成
    - 需要包含：基于的上游版本、本次新增/修复的自定义功能、已知问题
 
 ## 前置检查
@@ -56,7 +48,7 @@ LS
 ### 2. 版本确认
 
 ```bash
-# 读取当前基于的上游版本（从 CUSTOMIZATIONS.md 或 package.json）
+# 读取当前基于的上游版本（从 CUSTOMIZATIONS/registry.md 或 package.json）
 # 列出已有的 custom tag
 git tag -l "v*-custom.*" --sort=-v:refname | head -10
 ```
@@ -116,13 +108,14 @@ pnpm run test
 pnpm run build
 ```
 
-### 第三步：更新 CUSTOMIZATIONS.md 和生成 Release Notes
+### 第三步：更新 CUSTOMIZATIONS/registry.md 和生成 Release Notes
 
-在 CUSTOMIZATIONS.md 头部更新：
+在 CUSTOMIZATIONS/registry.md 头部更新：
 - `last_release_version` 字段
 - `last_release_date` 字段
+- `custom_version` 字段
 
-自动生成 Release Notes（写入临时文件或直接用于 gh 命令）：
+自动生成 Release Notes 并落盘到 `CUSTOMIZATIONS/release-notes/<custom-version>.md`（归档，随仓库提交）：
 
 ```markdown
 ## <custom-version> (<date>)
@@ -131,7 +124,7 @@ pnpm run build
 
 ### 自定义改动
 
-<根据 CUSTOMIZATIONS.md 中所有 active 条目生成>
+<根据 CUSTOMIZATIONS/registry.md 中所有 active 条目生成>
 
 - **<change-id>**: <功能描述>
   - <详细说明>
@@ -151,7 +144,7 @@ pnpm run build
 - Linux: <安装包文件名>
 
 ---
-**完整自定义改动清单**：见仓库根目录 CUSTOMIZATIONS.md
+**完整自定义改动清单**：见 CUSTOMIZATIONS/registry.md
 **上游版本**：chatboxai/chatbox@<upstream-version>
 ```
 
@@ -214,7 +207,7 @@ git push origin "<custom-version>"
 gh release create "<custom-version>" \
   <build-artifact-paths> \
   --title "<custom-version>" \
-  --notes-file <release-notes-file> \
+  --notes-file CUSTOMIZATIONS/release-notes/<custom-version>.md \
   --target custom/main
 ```
 

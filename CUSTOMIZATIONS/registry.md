@@ -11,12 +11,12 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 
 # Chatbox 自定义改动清单
 
-> **本文件是 AI Agent 管理自定义改动的核心文件。所有对上游源码的修改必须在此登记。**
+> **本文件是改动登记账本（纯数据）**。机制与规则（冲突策略、标记格式、类型/状态字典、frontmatter 字段职责）见 [`CUSTOMIZATIONS/README.md`](./README.md)。
 >
 > **AI Agent 注意**：
 > 1. 开发前必须先读取本文件
 > 2. 完成改动后必须调用 `chatbox-record-change` skill 更新本文件
-> 3. 合并上游时必须根据本文件的"冲突策略"列处理冲突
+> 3. 合并上游时按 `CUSTOMIZATIONS/README.md` 的冲突策略速查处理冲突
 > 4. 不要删除任何历史条目，标记状态为 deprecated/merged-upstream 即可
 
 ---
@@ -32,22 +32,6 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 
 ---
 
-## 冲突策略速查
-
-合并上游时，对冲突文件按以下策略处理（按优先级从高到低）：
-
-| 优先级 | 条件 | 策略 |
-|--------|------|------|
-| 1 | 文件在 `CUSTOMIZATIONS/src/` 目录下 | `keep-ours`（保留我们的） |
-| 2 | 文件在 `CUSTOMIZATIONS/patches/` 目录下 | `keep-ours` |
-| 3 | CUSTOMIZATIONS.md 条目标记 `keep-ours` | `keep-ours` |
-| 4 | CUSTOMIZATIONS.md 条目标记 `keep-theirs` | `keep-theirs`（使用上游的） |
-| 5 | 文件是 `pnpm-lock.yaml` | 接受上游版本后 `pnpm install` 重新生成 |
-| 6 | 文件包含 `[CUSTOM-BEGIN]` 标记 | `merge-manual`（按标记块保留自定义代码） |
-| 7 | 其他文件 | `merge-manual`（AI 分析后合并） |
-
----
-
 ## 改动清单
 
 | Change ID | 日期 | 类型 | 文件路径 | 功能描述 | 冲突策略 | 状态 |
@@ -56,29 +40,26 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | CUSTOM-20260902-002 | 2026-09-02 | config | electron-builder.yml、package.json、release/app/package.json | 发布 v1.23.0-custom.1：版本号升级为 1.23.0-custom.1；移除上游 open edition 残留的 win.signtoolOptions（其引用的 custom_win_sign.js 签名脚本已被上游删除，保留配置会导致打包失败），改为无签名构建 | merge-manual | active |
 | CUSTOM-20260902-003 | 2026-09-02 | script | CUSTOMIZATIONS/scripts/7za-shim.cs、CUSTOMIZATIONS/scripts/7za-shim.exe | 7za shim：修复 Windows 无 symlink 权限时 electron-builder 下载 winCodeSign-2.6.0.7z 解压失败（darwin dylib symlink 退出码 2）导致打包中断的问题。shim 转调真实 7za 并补齐 dylib 文件后返回 0。使用方式：编译后把 shim 复制为 node_modules/7zip-bin/win/x64/7za.exe（原文件改名 7za-real.exe，pnpm install 后需重做） | keep-ours | active |
 | CUSTOM-20260902-004 | 2026-09-02 | config | .agents/skills/（chatbox-merge-upstream、chatbox-record-change、chatbox-release）、AGENTS.md | 将 `.trae/skills/` 三个项目 skill 迁移到 `.agents/skills/`（ZCode 原生发现路径，跨工具共享）；`.trae/rules/project_rules.md` 的分支模型、冲突解决规则、合并测试要求合并进 AGENTS.md 后删除 `.trae/` 目录，不再依赖 Trae 私有约定 | keep-ours | active |
+| CUSTOM-20260902-005 | 2026-09-02 | config | CUSTOMIZATIONS/README.md（新增）、CUSTOMIZATIONS/registry.md（自根目录 CUSTOMIZATIONS.md 迁移）、CUSTOMIZATIONS/release-notes/v1.23.0-custom.1.md（归档）、AGENTS.md、.agents/skills/*/SKILL.md、CUSTOMIZATIONS/scripts/init-repo.ps1、CUSTOMIZATIONS/scripts/list-custom.ps1 | CUSTOMIZATIONS 机制重组：规则与账本分离。新建 CUSTOMIZATIONS/README.md 作为规则唯一完整版（冲突策略表、类型/状态字典、frontmatter 字段职责表、标记格式）；registry.md 瘦身为纯账本（frontmatter+改动清单+变更日志，历史条目未改）；根目录 AGENTS.md 精简为会话级硬约束+指针；发布说明归档到 release-notes/ 子目录；三个 skill 与两个脚本的路径引用同步更新；删除 record-change 中"frontmatter 由脚本维护"的虚假声明 | keep-ours | active |
 
-**类型说明**：
-- `new-file`：新增的自定义文件（放在 CUSTOMIZATIONS/src/ 下）
-- `modified-upstream`：修改了上游已有文件
-- `config`：配置文件修改（package.json、electron-builder.yml 等）
-- `asset`：资源文件（图标、图片等）
-- `dependency`：新增/修改依赖包
-- `script`：构建脚本/工具脚本
-
-**冲突策略说明**：
-- `keep-ours`：始终保留自定义版本，上游改动放弃
-- `keep-theirs`：始终使用上游版本，自定义改动放弃
-- `merge-manual`：需要 AI 逐块分析合并（默认）
-
-**状态说明**：
-- `active`：当前生效中
-- `deprecated`：已废弃/被替代
-- `merged-upstream`：已被上游原生支持，无需保留
-- `needs-migration`：跨大版本升级时需要适配迁移
+**类型/冲突策略/状态字典**：见 [`CUSTOMIZATIONS/README.md`](./README.md) 的"条目类型与状态字典"与"冲突策略速查"两节。
 
 ---
 
 ## 变更日志
+
+### 2026-09-02 - CUSTOM-20260902-005（CUSTOMIZATIONS 机制重组：规则与账本分离）
+- **功能**：解决规则文档与仓库文件混杂、规则五处重复维护的问题，确立"一处规则、一处账本、一处代码"结构
+- **改动文件**：CUSTOMIZATIONS/README.md（新增）、CUSTOMIZATIONS/registry.md（git mv 自根目录 CUSTOMIZATIONS.md）、CUSTOMIZATIONS/release-notes/v1.23.0-custom.1.md（git mv 自 CUSTOMIZATIONS/ 根）、AGENTS.md、.agents/skills/chatbox-record-change/SKILL.md、.agents/skills/chatbox-merge-upstream/SKILL.md、.agents/skills/chatbox-release/SKILL.md、CUSTOMIZATIONS/scripts/init-repo.ps1、CUSTOMIZATIONS/scripts/list-custom.ps1
+- **详细说明**：
+  - 根目录 CUSTOMIZATIONS.md 原身兼三职（规则文档+frontmatter 元数据+账本），且与 AGENTS.md、三个 SKILL.md 存在大量逐条重复。重组后：规则唯一完整版为 CUSTOMIZATIONS/README.md；registry.md 只保留 frontmatter、改动清单表、变更日志（历史条目一字未改）；根目录 AGENTS.md 精简为会话级硬约束+指针
+  - 三个 SKILL.md 中 35 处 CUSTOMIZATIONS.md 路径引用批量更新为 CUSTOMIZATIONS/registry.md；删除 Trae 遗留的 allowed-tools frontmatter 字段（ZCode 忽略、易误导）
+  - chatbox-record-change 中"frontmatter 由脚本维护"为虚假声明（实际仅 init-repo.ps1 初始化时写 4 个字段，其余由 merge/release skill 手动更新），改为指向 README.md 的 frontmatter 字段职责表
+  - chatbox-release 的 release notes 落盘路径明确为 CUSTOMIZATIONS/release-notes/<version>.md，与既有实践对齐
+  - init-repo.ps1：模板查找改为同目录 registry.md，目录创建加 release-notes/，移除在新结构下无意义的脚本自复制逻辑；list-custom.ps1：frontmatter 读取路径同步更新
+  - 上游合并无冲突风险：CUSTOMIZATIONS/ 与 .agents/ 均为纯自定义路径，上游不存在同名文件
+- **验证方式**：全仓库 grep 确认无指向根目录 CUSTOMIZATIONS.md 的残留引用（registry.md 历史日志中的旧路径为历史事实，保留）；git status 显示 rename 状态；biome check 改动文件无诊断
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-02 - CUSTOM-20260902-004（skill 迁移与规则整合）
 - **功能**：脱离 Trae 私有目录约定，skill 迁入标准发现路径
