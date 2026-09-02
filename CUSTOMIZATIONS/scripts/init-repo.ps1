@@ -82,52 +82,38 @@ if ($LASTEXITCODE -eq 0) {
 
 # [5] 创建目录
 Write-Host "`n[5/6] 创建目录结构..." -ForegroundColor Yellow
-foreach ($d in @("CUSTOMIZATIONS/src", "CUSTOMIZATIONS/patches", "CUSTOMIZATIONS/scripts")) {
+foreach ($d in @("CUSTOMIZATIONS/src", "CUSTOMIZATIONS/patches", "CUSTOMIZATIONS/scripts", "CUSTOMIZATIONS/release-notes")) {
     if (-not (Test-Path $d)) {
         New-Item -ItemType Directory -Path $d -Force | Out-Null
-        New-Item -ItemType File -Path "$d/.gitkeep" -Force | Out-Null
+        if (-not (Test-Path "$d/.gitkeep") -and $d -notlike "*release-notes") {
+            New-Item -ItemType File -Path "$d/.gitkeep" -Force | Out-Null
+        }
         Write-Host "  创建 $d/"
     }
 }
 
-# 拷贝脚本
-$scriptSource = $PSScriptRoot
-if ($scriptSource -and (Test-Path "$scriptSource/init-repo.ps1")) {
-    if (-not (Test-Path "CUSTOMIZATIONS/scripts/init-repo.ps1")) {
-        Copy-Item "$scriptSource/init-repo.ps1" "CUSTOMIZATIONS/scripts/init-repo.ps1"
-    }
-    if (-not (Test-Path "CUSTOMIZATIONS/scripts/sync-vendor.ps1") -and (Test-Path "$scriptSource/sync-vendor.ps1")) {
-        Copy-Item "$scriptSource/sync-vendor.ps1" "CUSTOMIZATIONS/scripts/sync-vendor.ps1"
-    }
-    if (-not (Test-Path "CUSTOMIZATIONS/scripts/list-custom.ps1") -and (Test-Path "$scriptSource/list-custom.ps1")) {
-        Copy-Item "$scriptSource/list-custom.ps1" "CUSTOMIZATIONS/scripts/list-custom.ps1"
-    }
-}
-
-# [6] CUSTOMIZATIONS.md
-Write-Host "`n[6/6] 初始化 CUSTOMIZATIONS.md..." -ForegroundColor Yellow
-if (-not (Test-Path "CUSTOMIZATIONS.md")) {
-    $templatePath = "$PSScriptRoot/../CUSTOMIZATIONS.md"
+# [6] CUSTOMIZATIONS/registry.md
+Write-Host "`n[6/6] 初始化 CUSTOMIZATIONS/registry.md..." -ForegroundColor Yellow
+if (-not (Test-Path "CUSTOMIZATIONS/registry.md")) {
+    $templatePath = "$PSScriptRoot/registry.md"
     if (Test-Path $templatePath) {
-        Copy-Item $templatePath "CUSTOMIZATIONS.md"
-    } elseif (Test-Path "CUSTOMIZATIONS/CUSTOMIZATIONS.template.md") {
-        Copy-Item "CUSTOMIZATIONS/CUSTOMIZATIONS.template.md" "CUSTOMIZATIONS.md"
+        Copy-Item $templatePath "CUSTOMIZATIONS/registry.md"
     } else {
-        Write-Warning "未找到 CUSTOMIZATIONS.md 模板，请从 chatbox-starter 目录复制"
+        Write-Warning "未找到 CUSTOMIZATIONS/registry.md，请从已初始化的自定义仓库复制"
     }
 }
 
-if (Test-Path "CUSTOMIZATIONS.md") {
+if (Test-Path "CUSTOMIZATIONS/registry.md") {
     $commitHash = git rev-parse $BaseVersion
     $today = Get-Date -Format "yyyy-MM-dd"
-    
-    $content = Get-Content "CUSTOMIZATIONS.md" -Raw -Encoding UTF8
+
+    $content = Get-Content "CUSTOMIZATIONS/registry.md" -Raw -Encoding UTF8
     $content = [regex]::Replace($content, '(current_upstream_version:\s*")[^"]*(")', "`${1}$BaseVersion`${2}")
     $content = [regex]::Replace($content, '(current_upstream_commit:\s*")[^"]*(")', "`${1}$commitHash`${2}")
     $content = [regex]::Replace($content, '(vendor_branch:\s*")[^"]*(")', "`${1}$vendorBranch`${2}")
     $content = [regex]::Replace($content, '(last_merge_date:\s*")[^"]*(")', "`${1}$today`${2}")
-    Set-Content "CUSTOMIZATIONS.md" -Value $content -Encoding UTF8
-    Write-Host "  CUSTOMIZATIONS.md 元数据已更新"
+    Set-Content "CUSTOMIZATIONS/registry.md" -Value $content -Encoding UTF8
+    Write-Host "  CUSTOMIZATIONS/registry.md 元数据已更新"
 }
 
 Write-Host "`n=== 初始化完成 ===" -ForegroundColor Green

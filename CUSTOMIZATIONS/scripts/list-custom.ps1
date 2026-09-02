@@ -8,10 +8,10 @@
 
 $ErrorActionPreference = "Stop"
 
-# 从 CUSTOMIZATIONS.md 读取 vendor branch
+# 从 CUSTOMIZATIONS/registry.md 读取 vendor branch
 $vendorBranch = "vendor/main"
-if (Test-Path "CUSTOMIZATIONS.md") {
-    $content = Get-Content "CUSTOMIZATIONS.md" -Raw
+if (Test-Path "CUSTOMIZATIONS/registry.md") {
+    $content = Get-Content "CUSTOMIZATIONS/registry.md" -Raw
     if ($content -match 'vendor_branch:\s*"([^"]+)"') {
         $vendorBranch = $Matches[1]
     }

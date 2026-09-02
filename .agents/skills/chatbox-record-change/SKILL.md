@@ -1,19 +1,11 @@
 ---
 name: "chatbox-record-change"
-description: "记录自定义改动到 CUSTOMIZATIONS.md。Invoke when AI agent completes a custom feature, bugfix, or any modification to upstream code, to register the change for future merge tracking."
-allowed-tools:
-  - Read
-  - Write
-  - SearchReplace
-  - Grep
-  - Glob
-  - LS
-  - RunCommand
+description: "记录自定义改动到 CUSTOMIZATIONS/registry.md。Invoke when AI agent completes a custom feature, bugfix, or any modification to upstream code, to register the change for future merge tracking."
 ---
 
 # Chatbox 自定义改动记录 Skill
 
-本 Skill 用于在 AI Agent 完成一次自定义开发后，将改动结构化记录到项目根目录的 `CUSTOMIZATIONS.md` 文件中。**每次完成自定义修改后必须调用本 Skill**。
+本 Skill 用于在 AI Agent 完成一次自定义开发后，将改动结构化记录到 `CUSTOMIZATIONS/registry.md` 文件中。**每次完成自定义修改后必须调用本 Skill**。
 
 ## 触发条件
 
@@ -27,7 +19,7 @@ allowed-tools:
 
 ### 第一步：确认仓库位置
 
-如果当前工作目录不是 chatbox 仓库根目录，通过用户确认或查找包含 `package.json`（含 "chatbox" 关键字）和 `CUSTOMIZATIONS.md` 的目录来定位。
+如果当前工作目录不是 chatbox 仓库根目录，通过用户确认或查找包含 `package.json`（含 "chatbox" 关键字）和 `CUSTOMIZATIONS/registry.md` 的目录来定位。
 
 ### 第二步：分析本次改动
 
@@ -54,11 +46,10 @@ git ls-files --others --exclude-standard
 4. **上游版本依赖**：基于哪个上游版本做的改动
 5. **冲突策略**：`keep-ours` / `keep-theirs` / `merge-manual`（默认 `merge-manual`，除非明确知道策略）
 
-### 第三步：读取现有 CUSTOMIZATIONS.md
+### 第三步：读取现有 CUSTOMIZATIONS/registry.md
 
 ```bash
-# 读取根目录 CUSTOMIZATIONS.md
-Read <repo-root>/CUSTOMIZATIONS.md
+Read <repo-root>/CUSTOMIZATIONS/registry.md
 ```
 
 **必须完整理解现有条目格式**后再追加，保持格式一致。
@@ -80,9 +71,9 @@ Read <repo-root>/CUSTOMIZATIONS.md
 
 如果是在已有标记块内追加修改，复用已有 change-id，不要创建新标记。
 
-### 第五步：更新 CUSTOMIZATIONS.md
+### 第五步：更新 CUSTOMIZATIONS/registry.md
 
-在 `CUSTOMIZATIONS.md` 的 `## 改动清单` 表格中追加新条目，每个条目包含：
+在 `CUSTOMIZATIONS/registry.md` 的 `## 改动清单` 表格中追加新条目，每个条目包含：
 
 ```markdown
 | <change-id> | <日期> | <类型> | <文件路径> | <功能描述> | <冲突策略> | <状态> |
@@ -105,15 +96,15 @@ Read <repo-root>/CUSTOMIZATIONS.md
 - `deprecated`：已废弃/被替代的改动
 - `needs-migration`：跨大版本升级时需要手动迁移的改动
 
-### 第六步：提交 CUSTOMIZATIONS.md 更新
+### 第六步：提交 CUSTOMIZATIONS/registry.md 更新
 
 ```bash
-git add CUSTOMIZATIONS.md
+git add CUSTOMIZATIONS/registry.md
 git add <被标记的修改文件>
 git commit -m "docs(custom): record change <change-id> - <简要描述>"
 ```
 
-**注意**：如果 CUSTOMIZATIONS.md 更新和功能代码在同一个功能分支上，一起提交即可；如果是补录，单独提交。
+**注意**：如果 CUSTOMIZATIONS/registry.md 更新和功能代码在同一个功能分支上，一起提交即可；如果是补录，单独提交。
 
 ## 重要约束
 
@@ -121,7 +112,7 @@ git commit -m "docs(custom): record change <change-id> - <简要描述>"
 2. **change-id 不可复用**：每个逻辑改动分配唯一 id，即使同一文件多次修改也要不同 id（除非是在已有标记块内补充）。
 3. **路径使用相对路径**：从仓库根目录开始，如 `src/renderer/components/ChatInput.tsx`。
 4. **描述使用中文**（除非用户明确要求英文）。
-5. **不要手动编辑 frontmatter 区域**：frontmatter 由脚本维护。
+5. **frontmatter 字段不要随意改动**：各字段的更新时机与负责方见 `CUSTOMIZATIONS/README.md` 的"frontmatter 字段职责"表；本 skill 只负责表格与变更日志，不更新 frontmatter。
 
 ## 输出要求
 
@@ -129,4 +120,4 @@ git commit -m "docs(custom): record change <change-id> - <简要描述>"
 - 新增了哪些 change-id
 - 涉及哪些文件
 - 冲突策略设置是什么
-- CUSTOMIZATIONS.md 当前总条目数
+- CUSTOMIZATIONS/registry.md 当前总条目数
