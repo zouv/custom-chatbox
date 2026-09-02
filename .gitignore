@@ -199,3 +199,8 @@ tmp_*.*
 
 # Local pnpm store accidentally created by pnpm install in worktrees
 .pnpm-store/
+
+# [CUSTOM-BEGIN] CUSTOM-20260903-001 - ignore ZCode local session data
+# ZCode 会话本地生成的计划文档，不提交；.zcode 下其他目录（skills/commands/config）为共享配置路径，保留
+.zcode/plans/
+# [CUSTOM-END] CUSTOM-20260903-001
