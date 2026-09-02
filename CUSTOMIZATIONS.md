@@ -52,7 +52,7 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 
 | Change ID | 日期 | 类型 | 文件路径 | 功能描述 | 冲突策略 | 状态 |
 |-----------|------|------|----------|----------|----------|------|
-| _(示例)_ | _(示例)_ | _(示例)_ | _(示例)_ | _(示例)_ | _(示例)_ | _(示例)_ |
+| CUSTOM-20260902-001 | 2026-09-02 | modified-upstream | packages/chatbox-core/src/domain/settings/settings-schema.ts | 键盘快捷键「显示/隐藏应用窗口」(quickToggle) 预设组合新增 Alt+Shift+Space 选项 | merge-manual | active |
 
 **类型说明**：
 - `new-file`：新增的自定义文件（放在 CUSTOMIZATIONS/src/ 下）
@@ -76,6 +76,13 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---
 
 ## 变更日志
+
+### 2026-09-02 - CUSTOM-20260902-001
+- **功能**：键盘快捷键「显示/隐藏应用窗口」新增 Alt+Shift+Space 预设组合
+- **改动文件**：packages/chatbox-core/src/domain/settings/settings-schema.ts
+- **详细说明**：在 `shortcutToggleWindowValues` 数组中新增 `'Alt+Shift+Space'`（插入在 'Alt+Space' 之后）。该数组同时作为渲染层设置页下拉框（src/renderer/components/Shortcut.tsx）的选项来源和 zod 校验枚举（`ShortcutToggleWindowValueSchema`），主进程注册（src/main/main.ts 的 normalizeShortcut）对 Alt/Shift/Space 无需转换，Electron accelerator 原生支持该组合。改动区域已用 [CUSTOM-BEGIN]/[CUSTOM-END] 标记包裹。
+- **验证方式**：`pnpm run dev` 后在 设置 → 键盘快捷键 → 显示/隐藏应用窗口 下拉框中选择 Alt+Shift+Space，按该组合键验证窗口显示/隐藏；`npx vitest run src/shared/defaults.test.ts`（12 通过）；biome check 改动文件无诊断
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### _(初始创建)_
 - 基于上游 chatbox 创建自定义分支

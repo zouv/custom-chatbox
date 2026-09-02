@@ -282,7 +282,16 @@ export const shortcutSendValues = [
 ]
 const ShortcutSendValueSchema = z.enum(shortcutSendValues as [string, ...string[]])
 
-export const shortcutToggleWindowValues = ['', 'Alt+`', 'Alt+Space', 'Ctrl+Alt+Space', 'Ctrl+Space']
+export const shortcutToggleWindowValues = [
+  '',
+  'Alt+`',
+  'Alt+Space',
+  // [CUSTOM-BEGIN] CUSTOM-20260902-001 - add Alt+Shift+Space preset for quickToggle window shortcut
+  'Alt+Shift+Space',
+  // [CUSTOM-END] CUSTOM-20260902-001
+  'Ctrl+Alt+Space',
+  'Ctrl+Space',
+]
 const ShortcutToggleWindowValueSchema = z.enum(shortcutToggleWindowValues as [string, ...string[]])
 
 const newThreadShortcut = 'mod+shift+n'
