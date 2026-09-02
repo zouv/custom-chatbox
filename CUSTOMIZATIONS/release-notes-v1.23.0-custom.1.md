@@ -1,0 +1,24 @@
+## v1.23.0-custom.1 (2026-09-02)
+
+基于上游 chatbox v1.23.0 (61191ae7) 的自定义版本。
+
+### 自定义改动
+
+- **CUSTOM-20260902-001**: 键盘快捷键「显示/隐藏应用窗口」(quickToggle) 预设组合新增 `Alt+Shift+Space` 选项
+  - 在 设置 → 键盘快捷键 → 显示/隐藏应用窗口 的下拉框中可选择
+- **CUSTOM-20260902-002**: 移除上游残留的 Windows 签名配置（`signtoolOptions`）
+  - 上游 v1.23.0 open edition 已删除 `custom_win_sign.js` 签名脚本但保留了引用它的配置，会导致打包失败；本版本改为无签名构建
+
+### 已知问题
+
+- 安装包未做代码签名（上游签名脚本已随 open edition 移除），Windows SmartScreen 可能提示未知发布者
+- Windows 下 9 个上游测试因 symlink/sandbox 环境差异失败（上游既有问题，非本版本引入）
+
+### 下载
+
+- Windows x64: Chatbox-1.23.0-custom.1-Setup.exe
+- Windows arm64: Chatbox-1.23.0-custom.1-Setup.exe
+
+---
+**完整自定义改动清单**：见仓库根目录 CUSTOMIZATIONS.md
+**上游版本**：chatboxai/chatbox@v1.23.0

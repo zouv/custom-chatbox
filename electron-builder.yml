@@ -51,10 +51,8 @@ win:
         - arm64
   verifyUpdateCodeSignature: false
   artifactName: ${productName}-${version}-Setup.${ext}
-  signtoolOptions:
-    sign: ./custom_win_sign.js
-    signingHashAlgorithms:
-      - sha256
+  # [CUSTOM-BEGIN] CUSTOM-20260902-002 - upstream open edition removed custom_win_sign.js (Azure signing script) but left signtoolOptions behind; drop the dangling config so packaging works unsigned
+  # [CUSTOM-END] CUSTOM-20260902-002
 
 nsis:
   oneClick: false
