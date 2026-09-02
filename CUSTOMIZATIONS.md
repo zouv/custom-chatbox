@@ -55,6 +55,7 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | CUSTOM-20260902-001 | 2026-09-02 | modified-upstream | packages/chatbox-core/src/domain/settings/settings-schema.ts | 键盘快捷键「显示/隐藏应用窗口」(quickToggle) 预设组合新增 Alt+Shift+Space 选项 | merge-manual | active |
 | CUSTOM-20260902-002 | 2026-09-02 | config | electron-builder.yml、package.json、release/app/package.json | 发布 v1.23.0-custom.1：版本号升级为 1.23.0-custom.1；移除上游 open edition 残留的 win.signtoolOptions（其引用的 custom_win_sign.js 签名脚本已被上游删除，保留配置会导致打包失败），改为无签名构建 | merge-manual | active |
 | CUSTOM-20260902-003 | 2026-09-02 | script | CUSTOMIZATIONS/scripts/7za-shim.cs、CUSTOMIZATIONS/scripts/7za-shim.exe | 7za shim：修复 Windows 无 symlink 权限时 electron-builder 下载 winCodeSign-2.6.0.7z 解压失败（darwin dylib symlink 退出码 2）导致打包中断的问题。shim 转调真实 7za 并补齐 dylib 文件后返回 0。使用方式：编译后把 shim 复制为 node_modules/7zip-bin/win/x64/7za.exe（原文件改名 7za-real.exe，pnpm install 后需重做） | keep-ours | active |
+| CUSTOM-20260902-004 | 2026-09-02 | config | .agents/skills/（chatbox-merge-upstream、chatbox-record-change、chatbox-release）、AGENTS.md | 将 `.trae/skills/` 三个项目 skill 迁移到 `.agents/skills/`（ZCode 原生发现路径，跨工具共享）；`.trae/rules/project_rules.md` 的分支模型、冲突解决规则、合并测试要求合并进 AGENTS.md 后删除 `.trae/` 目录，不再依赖 Trae 私有约定 | keep-ours | active |
 
 **类型说明**：
 - `new-file`：新增的自定义文件（放在 CUSTOMIZATIONS/src/ 下）
@@ -78,6 +79,18 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---
 
 ## 变更日志
+
+### 2026-09-02 - CUSTOM-20260902-004（skill 迁移与规则整合）
+- **功能**：脱离 Trae 私有目录约定，skill 迁入标准发现路径
+- **改动文件**：.agents/skills/chatbox-merge-upstream/SKILL.md、.agents/skills/chatbox-record-change/SKILL.md、.agents/skills/chatbox-release/SKILL.md（自 .trae/skills/ git mv 迁移，内容未改）、AGENTS.md、CUSTOMIZATIONS.md；删除 .trae/rules/project_rules.md 与 .trae/ 目录
+- **详细说明**：
+  - `.trae/skills/` 是 Trae 工具的私有路径，ZCode/Claude/Cursor 等其他 Agent 工具无法原生发现。`.agents/skills/` 是跨工具共享的工作区级 skill 标准路径（ZCode 发现顺序中的工作区第 5 级，Claude/Codex 等亦兼容该约定）
+  - 三个 skill 的 SKILL.md 内容未改动，frontmatter 的 `allowed-tools`（Trae 专用字段）被 ZCode 忽略，无害
+  - project_rules.md 中 AGENTS.md 未覆盖的独有规则已合并进 AGENTS.md：完整分支模型表（upstream/main、vendor、custom/main、feature、release）、上游合并冲突解决规则（keep-ours/keep-theirs/merge-manual/pnpm-lock 处理）、合并与发布前的测试要求
+  - AGENTS.md 的必读文件清单移除 .trae 引用；项目结构速查和 Skills 触发条件表补充 .agents/skills/ 说明
+  - 注意：上游合并时 `.trae/` 与 `.agents/` 均非上游文件，无冲突风险；本条目 keep-ours 防止误删
+- **验证方式**：`find . -name SKILL.md` 确认三个 skill 位于 .agents/skills/ 下；全仓库 grep 无 `.trae` 残留引用；`git status` 显示 rename 状态
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-02 - CUSTOM-20260902-002 / CUSTOM-20260902-003（发布 v1.23.0-custom.1）
 - **功能**：发布 v1.23.0-custom.1 安装包
