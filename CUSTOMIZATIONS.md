@@ -3,8 +3,8 @@ current_upstream_version: "v1.23.0"
 current_upstream_commit: "61191ae783aa629d83b7001634350ac29a7f10d0"
 custom_version: "0.0.0-custom.0"
 last_merge_date: "2026-09-02"
-last_release_version: ""
-last_release_date: ""
+last_release_version: "v1.23.0-custom.1"
+last_release_date: "2026-09-02"
 vendor_branch: "vendor/v1.23.x"
 upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---
@@ -53,6 +53,8 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | Change ID | 日期 | 类型 | 文件路径 | 功能描述 | 冲突策略 | 状态 |
 |-----------|------|------|----------|----------|----------|------|
 | CUSTOM-20260902-001 | 2026-09-02 | modified-upstream | packages/chatbox-core/src/domain/settings/settings-schema.ts | 键盘快捷键「显示/隐藏应用窗口」(quickToggle) 预设组合新增 Alt+Shift+Space 选项 | merge-manual | active |
+| CUSTOM-20260902-002 | 2026-09-02 | config | electron-builder.yml、package.json、release/app/package.json | 发布 v1.23.0-custom.1：版本号升级为 1.23.0-custom.1；移除上游 open edition 残留的 win.signtoolOptions（其引用的 custom_win_sign.js 签名脚本已被上游删除，保留配置会导致打包失败），改为无签名构建 | merge-manual | active |
+| CUSTOM-20260902-003 | 2026-09-02 | script | CUSTOMIZATIONS/scripts/7za-shim.cs、CUSTOMIZATIONS/scripts/7za-shim.exe | 7za shim：修复 Windows 无 symlink 权限时 electron-builder 下载 winCodeSign-2.6.0.7z 解压失败（darwin dylib symlink 退出码 2）导致打包中断的问题。shim 转调真实 7za 并补齐 dylib 文件后返回 0。使用方式：编译后把 shim 复制为 node_modules/7zip-bin/win/x64/7za.exe（原文件改名 7za-real.exe，pnpm install 后需重做） | keep-ours | active |
 
 **类型说明**：
 - `new-file`：新增的自定义文件（放在 CUSTOMIZATIONS/src/ 下）
@@ -76,6 +78,18 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---
 
 ## 变更日志
+
+### 2026-09-02 - CUSTOM-20260902-002 / CUSTOM-20260902-003（发布 v1.23.0-custom.1）
+- **功能**：发布 v1.23.0-custom.1 安装包
+- **改动文件**：electron-builder.yml、package.json、release/app/package.json、CUSTOMIZATIONS/scripts/7za-shim.cs、CUSTOMIZATIONS/scripts/7za-shim.exe、CUSTOMIZATIONS/release-notes-v1.23.0-custom.1.md
+- **详细说明**：
+  - 版本号：package.json 与 release/app/package.json 的 version 更新为 `1.23.0-custom.1`（electron-builder 产物名使用 release/app 的 version）
+  - 移除 electron-builder.yml 中残留的 `win.signtoolOptions`：上游 v1.23.0 open edition 已删除 custom_win_sign.js（Azure Key Vault 签名脚本）但配置残留，导致打包失败；本环境无签名证书，改为无签名构建
+  - 打包环境问题修复：本机（Windows 非管理员、未开启开发者模式）解压 electron-builder 的 winCodeSign-2.6.0.7z 缓存时 7za 因无 symlink 权限报错退出（exit 2）。用 csc.exe 编译了 CUSTOMIZATIONS/scripts/7za-shim.cs 为 7za-shim.exe，安装到 node_modules/7zip-bin/win/x64/7za.exe（真实 7za 改名 7za-real.exe 由 shim 转调），shim 在解压后把失败的 darwin dylib symlink 用目标文件副本补齐并返回 0。注意：`pnpm install` 会重置 node_modules，需重新安装 shim（编译命令：`csc -out:CUSTOMIZATIONS\scripts\7za-shim.exe CUSTOMIZATIONS\scripts\7za-shim.cs`，然后 `cp CUSTOMIZATIONS/scripts/7za-shim.exe node_modules/7zip-bin/win/x64/7za.exe`，`mv node_modules/7zip-bin/win/x64/7za.exe node_modules/7zip-bin/win/x64/7za-real.exe` 先行）
+  - 产物：release/build/Chatbox-1.23.0-custom.1-Setup.exe（NSIS，x64+arm64 合一，约 234MB）+ .blockmap（差分更新用）；未签名，Windows SmartScreen 可能告警
+  - gh CLI 不可用，GitHub Release 需手动创建
+- **验证方式**：pnpm run build 通过；产物生成于 release/build/ 并通过 electron-builder 全流程（NSIS 打包、blockmap 生成）
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-02 - CUSTOM-20260902-001
 - **功能**：键盘快捷键「显示/隐藏应用窗口」新增 Alt+Shift+Space 预设组合
