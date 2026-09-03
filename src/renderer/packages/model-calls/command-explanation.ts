@@ -4,7 +4,9 @@ import { z } from 'zod'
 import { createModel } from '@/adapters'
 import { languageNameMap } from '@/i18n/locales'
 import { convertToModelMessages } from '@/packages/model-calls/message-utils'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 
 const COMMAND_ASSESSMENT_TOOL_NAME = 'submit_command_assessment'
 const COMMAND_RISK_FLAGS = ['filesystem', 'network', 'secrets', 'system', 'untrusted_code', 'uncertain'] as const
@@ -116,7 +118,7 @@ export async function generateCommandExplanation(
   if (!model.isSupportSystemMessage()) {
     throw new Error('Command safety assessment requires system message support')
   }
-  const language = languageNameMap[settingsStore.getState().getSettings().language] || 'English'
+  const language = languageNameMap[getSettingsSnapshot().language] || 'English'
   const messages = buildExplanationMessages(command, userContext, language)
   const coreMessages = await convertToModelMessages(messages, { modelSupportVision: model.isSupportVision() })
 

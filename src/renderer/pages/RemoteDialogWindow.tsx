@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next'
 import Markdown from '@/components/Markdown'
 import { trackingEvent } from '@/packages/event'
 import platform from '@/platform'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 import * as remote from '../packages/remote'
 
 const { useEffect, useState } = React
@@ -16,7 +18,7 @@ export default function RemoteDialogWindow() {
 
   const checkRemoteDialog = async () => {
     const config = await platform.getConfig()
-    const settings = settingsStore.getState().getSettings()
+    const settings = getSettingsSnapshot()
     const version = await platform.getVersion()
     if (version === '0.0.1') {
       return // 本地开发环境不显示远程弹窗

@@ -70,6 +70,11 @@ export default class DesktopPlatform implements Platform {
   public onWindowFocused(callback: () => void): () => void {
     return this.ipc.onWindowFocused(callback)
   }
+  // [CUSTOM-BEGIN] CUSTOM-20260903-004 - desktop-only push when the window-toggle global shortcut fails to register
+  public onShortcutRegistrationFailed(callback: (accelerator: string) => void): () => void {
+    return this.ipc.onShortcutRegistrationFailed(callback)
+  }
+  // [CUSTOM-END] CUSTOM-20260903-004
   public async isWindowFocused(): Promise<boolean> {
     return this.ipc.invoke('window:is-focused')
   }

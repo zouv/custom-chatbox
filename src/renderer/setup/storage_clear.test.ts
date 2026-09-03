@@ -51,6 +51,7 @@ vi.mock('@/stores/sessionHelpers', () => ({
 }))
 
 vi.mock('@/stores/settingsStore', () => ({
+  getSettingsSnapshot: () => ({}),
   settingsStore: {
     getState: () => ({
       getSettings: () => ({}),

@@ -958,7 +958,13 @@ export function mergeSettings(
 }
 
 export function initEmptyChatSession(): Omit<Session, 'id'> {
-  const settings = settingsStore.getState().getSettings()
+  // [CUSTOM-BEGIN] CUSTOM-20260903-005 - read settings resiliently
+  // The store state IS the settings (service updates merge into it); fall back to
+  // the raw state fields when the action layer is unavailable, so a replaced state
+  // can never crash the new-chat page with "getSettings is not a function".
+  const state = settingsStore.getState() as Settings & { getSettings?: () => Settings }
+  const settings = typeof state.getSettings === 'function' ? state.getSettings() : state
+  // [CUSTOM-END] CUSTOM-20260903-005
   const { chat: lastUsedChatModel } = lastUsedModelStore.getState()
   const defaultChatModel = settings.defaultChatModel
     ? {

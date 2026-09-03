@@ -100,7 +100,13 @@ export function createSettingsStore(service: SettingsService): SettingsStore {
 
   const internalSetState = store.setState
   unsubscribeService = service.subscribe((settings) => {
-    internalSetState(settings)
+    // [CUSTOM-BEGIN] CUSTOM-20260903-005 - keep action methods when projecting service updates
+    // The raw Settings object lacks the store's action methods (setSettings/getSettings/
+    // hydrate/destroy). Merging it explicitly preserves them even if a caller replaced the
+    // state wholesale; without this, any getState().getSettings() consumer crashes with
+    // "getSettings is not a function" (e.g. initEmptyChatSession on the new-chat page).
+    internalSetState((current) => ({ ...current, ...settings }))
+    // [CUSTOM-END] CUSTOM-20260903-005
   })
 
   store.setState = ((update, replace) => {

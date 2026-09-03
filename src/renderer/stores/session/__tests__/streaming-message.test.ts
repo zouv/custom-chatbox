@@ -13,6 +13,7 @@ vi.mock('@/app/renderer-application', () => ({
 }))
 
 vi.mock('../../settingsStore', () => ({
+  getSettingsSnapshot: vi.fn().mockReturnValue({}),
   settingsStore: { getState: vi.fn().mockReturnValue({ getSettings: vi.fn().mockReturnValue({}) }) },
 }))
 

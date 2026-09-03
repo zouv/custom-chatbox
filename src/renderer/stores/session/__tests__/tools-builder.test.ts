@@ -114,6 +114,7 @@ vi.mock('@/packages/user-exec-approval', () => ({
 }))
 
 vi.mock('@/stores/settingsStore', () => ({
+  getSettingsSnapshot: () => getSettingsMock(),
   settingsStore: {
     getState: () => ({
       ...settingsState,

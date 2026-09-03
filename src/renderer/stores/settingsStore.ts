@@ -1,4 +1,4 @@
-import { getDefaultDocumentParser } from '@chatbox/core/domain/settings'
+import { getDefaultDocumentParser, type Settings } from '@chatbox/core/domain/settings'
 import {
   type SettingsStoreState,
   selectLanguage,
@@ -47,6 +47,16 @@ export function initSettingsStore() {
 export function useSettingsStore<U>(selector: (state: SettingsStoreState) => U): U {
   return useSharedSettingsStore(settingsStore, selector)
 }
+
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - safe settings access for imperative call sites
+// The store state is the settings snapshot itself; when the action layer is unavailable
+// (state replaced wholesale), fall back to the raw state fields so generation and other
+// critical paths cannot crash with "getSettings is not a function".
+export function getSettingsSnapshot(): Settings {
+  const state = settingsStore.getState() as Settings & { getSettings?: () => Settings }
+  return typeof state.getSettings === 'function' ? state.getSettings() : state
+}
+// [CUSTOM-END] CUSTOM-20260903-005
 
 export const useLanguage = () => useSettingsStore(selectLanguage)
 export const useTheme = () => useSettingsStore(selectTheme)

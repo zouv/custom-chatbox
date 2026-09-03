@@ -39,6 +39,7 @@ vi.mock('@/platform', () => ({
 }))
 
 vi.mock('@/stores/settingsStore', () => ({
+  getSettingsSnapshot: () => ({}),
   settingsStore: {
     getState: () => ({ getSettings: () => ({}) }),
   },

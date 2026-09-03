@@ -6,7 +6,9 @@ import { generateText } from '@/packages/model-calls'
 import { convertToModelMessages } from '@/packages/model-calls/message-utils'
 import * as promptFormat from '@/packages/prompts'
 import * as settingActions from '@/stores/settingActions'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 import { reportError } from '@/utils/sentry'
 
 export interface SummaryGeneratorOptions {
@@ -28,7 +30,7 @@ export async function generateSummary(options: SummaryGeneratorOptions): Promise
     return { success: true, summary: '' }
   }
 
-  const globalSettings = settingsStore.getState().getSettings()
+  const globalSettings = getSettingsSnapshot()
   const language = options.language ?? globalSettings.language
   const languageName = languageNameMap[language]
 
@@ -100,7 +102,7 @@ function buildModelSettings(globalSettings: Settings, sessionSettings?: SessionS
 }
 
 export function isSummaryGenerationAvailable(): boolean {
-  const globalSettings = settingsStore.getState().getSettings()
+  const globalSettings = getSettingsSnapshot()
   const remoteConfig = settingActions.getRemoteConfig()
 
   const fastModel = (remoteConfig as { fastModel?: { provider: string; model: string } })?.fastModel
@@ -130,7 +132,7 @@ export async function generateSummaryWithStream(options: StreamingSummaryOptions
     return { success: true, summary: '' }
   }
 
-  const globalSettings = settingsStore.getState().getSettings()
+  const globalSettings = getSettingsSnapshot()
   const language = options.language ?? globalSettings.language
   const languageName = languageNameMap[language]
 

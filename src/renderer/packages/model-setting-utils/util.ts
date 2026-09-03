@@ -1,7 +1,9 @@
 import { getSystemProviders } from '@shared/providers'
 import type { ProviderModelInfo } from '@shared/types'
 import { identity, omitBy } from 'lodash'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 
 function updateModelInfo(localModel: ProviderModelInfo, newModelInfo: ProviderModelInfo) {
   return {
@@ -11,7 +13,7 @@ function updateModelInfo(localModel: ProviderModelInfo, newModelInfo: ProviderMo
 }
 
 function updateLocalModels(providerId: string, latestModels: ProviderModelInfo[]) {
-  const settings = settingsStore.getState().getSettings()
+  const settings = getSettingsSnapshot()
 
   if (!settings) return
 

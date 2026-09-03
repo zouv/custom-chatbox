@@ -88,6 +88,7 @@ vi.mock('@/packages/skills/controller', () => ({
 }))
 
 vi.mock('@/stores/settingsStore', () => ({
+  getSettingsSnapshot: getSettingsMock,
   settingsStore: {
     getState: () => ({
       getSettings: getSettingsMock,

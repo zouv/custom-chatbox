@@ -64,6 +64,9 @@ export interface Platform extends Storage {
   onUpdaterError?(callback: (data: { message: string }) => void): () => void
   checkForUpdate?(): Promise<{ started: boolean }>
   onNavigate?(callback: (path: string) => void): () => void
+  // [CUSTOM-BEGIN] CUSTOM-20260903-004 - desktop-only push when the window-toggle global shortcut fails to register
+  onShortcutRegistrationFailed?(callback: (accelerator: string) => void): () => void
+  // [CUSTOM-END] CUSTOM-20260903-004
   openLink(url: string): Promise<void>
   getDeviceName(): Promise<string>
   getInstanceName(): Promise<string>
