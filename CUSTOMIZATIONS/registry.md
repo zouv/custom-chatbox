@@ -43,12 +43,26 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | CUSTOM-20260902-005 | 2026-09-02 | config | CUSTOMIZATIONS/README.md（新增）、CUSTOMIZATIONS/registry.md（自根目录 CUSTOMIZATIONS.md 迁移）、CUSTOMIZATIONS/release-notes/v1.23.0-custom.1.md（归档）、AGENTS.md、.agents/skills/*/SKILL.md、CUSTOMIZATIONS/scripts/init-repo.ps1、CUSTOMIZATIONS/scripts/list-custom.ps1 | CUSTOMIZATIONS 机制重组：规则与账本分离。新建 CUSTOMIZATIONS/README.md 作为规则唯一完整版（冲突策略表、类型/状态字典、frontmatter 字段职责表、标记格式）；registry.md 瘦身为纯账本（frontmatter+改动清单+变更日志，历史条目未改）；根目录 AGENTS.md 精简为会话级硬约束+指针；发布说明归档到 release-notes/ 子目录；三个 skill 与两个脚本的路径引用同步更新；删除 record-change 中"frontmatter 由脚本维护"的虚假声明 | keep-ours | active |
 | CUSTOM-20260903-001 | 2026-09-03 | config | .gitignore | gitignore 新增 `.zcode/plans/` 忽略规则（带 [CUSTOM] 标记包裹）：ZCode 会话本地生成的计划文档不提交。注意只忽略 plans 子目录，`.zcode/` 下其他路径（skills/commands/config.json）是 ZCode 工作区级共享配置，将来可能使用，保留跟踪 | keep-ours | active |
 | CUSTOM-20260903-002 | 2026-09-03 | modified-upstream | packages/chatbox-core/src/domain/settings/settings-schema.ts、packages/chatbox-core/src/domain/settings/settings-defaults.ts、packages/chatbox-core/src/application/session/SessionNamingService.ts、packages/chatbox-core/src/application/session/SessionNamingService.test.ts、src/renderer/routes/settings/chat.tsx、src/renderer/components/Shortcut.tsx、src/renderer/i18n/locales/*/translation.json（14 个语言文件） | 双功能：1) 键盘快捷键「显示/隐藏应用窗口」(quickToggle) 预设组合新增 Super+Shift+Space（Windows 下即 Win+Shift+Space）；2) 新增设置项 autoNameCopilotThreads（设置→对话设置→功能，默认关闭），开启后 Copilot（搭档）对话的新话题用默认话题命名模型（threadNamingModel）自动命名，关闭时保持上游行为（话题以搭档名命名） | merge-manual | active |
+| CUSTOM-20260903-003 | 2026-09-03 | script | CUSTOMIZATIONS/scripts/manager.sh、CUSTOMIZATIONS/scripts/build-unpacked.bat、CUSTOMIZATIONS/scripts/build-setup.bat | 本地操作与打包脚本套件（参考 zgame/app-usage-tracker 的 manager.sh / ci.bat / publish.bat 风格）：manager.sh 为 Git Bash 统一入口（install/dev/build/lint/test/unpacked/setup/artifacts/clean，install 时自动装 7za shim）；build-unpacked.bat 打 electron-builder --dir 目录免安装包（release/build/win-unpacked/）；build-setup.bat 打 NSIS Setup 安装包（release/build/Chatbox-\<version\>-Setup.exe）。均支持 --skip-build 与 electron-builder 参数透传，内置 7za shim 检查/自动安装、结束运行中 Chatbox.exe、UPDATE_CHANNEL=alpha 注入 | keep-ours | active |
 
 **类型/冲突策略/状态字典**：见 [`CUSTOMIZATIONS/README.md`](./README.md) 的"条目类型与状态字典"与"冲突策略速查"两节。
 
 ---
 
 ## 变更日志
+
+### 2026-09-03 - CUSTOM-20260903-003
+- **功能**：本地操作与打包脚本套件（manager.sh + build-unpacked.bat + build-setup.bat）
+- **改动文件**：CUSTOMIZATIONS/scripts/manager.sh（新增）、CUSTOMIZATIONS/scripts/build-unpacked.bat（新增）、CUSTOMIZATIONS/scripts/build-setup.bat（新增）
+- **详细说明**：
+  - 参考用户另一项目 zgame/app-usage-tracker 的 manager.sh / ci.bat / publish.bat 脚本风格（统一入口 + 分步 bat + 状态输出 + 环境自检），为 chatbox 自定义版写一套本地操作脚本，全部位于 CUSTOMIZATIONS/scripts/（纯新增文件，上游无同名文件）
+  - manager.sh（Git Bash 执行，`sh CUSTOMIZATIONS/scripts/manager.sh <command>`）：install（pnpm install + 自动装 7za shim）、dev/build/lint/test（透传 pnpm）、unpacked/setup（转发到对应 bat）、artifacts（列产物）、clean（清 out/dist/release 产物）；自动 cd 到仓库根、前置 require_cmd 检查、kill 运行中的 Chatbox.exe
+  - build-unpacked.bat：electron-builder `--dir --win` 打目录免安装包，产物 release/build/win-unpacked/Chatbox.exe；build-setup.bat：NSIS Setup 包，产物 release/build/Chatbox-\<version\>-Setup.exe（版本号从 release/app/package.json 读取，与 electron-builder artifactName 一致），完成后输出产物路径与大小
+  - 两个 bat 的公共设计：`--skip-build` 跳过 pnpm run build（用现有产物重打包，调试打包流程用）；其余参数透传给 electron-builder；打包前自动检查/安装 7za shim（CUSTOM-20260902-003，检测 7za-real.exe 是否存在，缺失时用 CUSTOMIZATIONS/scripts/7za-shim.exe 补装）；taskkill 结束 Chatbox.exe 防产物占用；失败路径 exit /b 1 保证 CI 串联
+  - 三个环境坑（实测踩到并修复）：1) bat 内不能用中文注释——chcp 65001 下 cmd 重读批处理文件偏移错乱，把 rem 中文行拆断当命令执行（参考项目 bat 全 ASCII 正是此因），两 bat 最终纯英文；2) if 块内 echo 文本含未转义 `)` 会中断 cmd 括号解析（`. was unexpected`），`--skip-build` 提示语需写成 `^(--skip-build^)`；3) electron-builder.yml 的 publish.channel 引用 `${env.UPDATE_CHANNEL}`，`--publish never` 也会因缺该环境变量中止，bat 内用 cross-env UPDATE_CHANNEL=alpha 注入（与 package.json 的 package script 行为一致）
+  - 正式发布（GitHub Release、版本号、release notes）仍走 chatbox-release skill，本套件只覆盖本地打包
+- **验证方式**：`sh CUSTOMIZATIONS/scripts/manager.sh help`/`artifacts`/未知命令（exit 2）正常；`build-setup.bat --skip-build --config bogus.yml` 干跑验证参数解析与失败路径 exit=1；真实打包跑通两种包：unpacked（win-unpacked/Chatbox.exe 约 201MB）与 Setup（Chatbox-1.23.0-custom.1-Setup.exe 约 245MB + blockmap，NSIS x64+arm64）；manager.sh unpacked/setup 转发 --skip-build 均成功回显产物
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-03 - CUSTOM-20260903-002
 - **功能**：快捷键新增 Win+Shift+Space 预设；搭档对话新话题自动命名开关
