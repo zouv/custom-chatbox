@@ -4,7 +4,9 @@ import { collectGlobalResourceReferences, collectSessionResourceReferences } fro
 import { StorageKey, StorageKeyGenerator } from '@/storage/StoreStorage'
 import { inputBoxPreConstructedMessageFamily } from '@/stores/atoms/uiAtoms'
 import { getMetaStorage } from '@/stores/sessionHelpers'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 import platform from '../platform'
 import storage from '../storage'
 import { getRecentlyWrittenBlobKeys, isBlobRecentlyWritten } from '../storage/blob-write-tracker'
@@ -162,7 +164,7 @@ async function doCleanupOrphanedBlobs(options?: CleanupOptions): Promise<number>
 
   // 用户/助手头像、背景图，以及自定义 Copilot 的图标与背景不需要删除。
   // Copilot 图片的唯一持久引用在 StorageKey.MyCopilots，必须显式加载保护。
-  const settings = settingsStore.getState().getSettings()
+  const settings = getSettingsSnapshot()
   const copilots = await storage.getItem<CopilotDetail[]>(StorageKey.MyCopilots, [])
   for (const reference of collectGlobalResourceReferences(settings, copilots)) {
     needDeletedSet.delete(reference.storageKey)

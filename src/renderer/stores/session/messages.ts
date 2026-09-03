@@ -21,7 +21,9 @@ import { reportError } from '@/utils/sentry'
 import { SESSION_ATTACHMENT_RAG_LOG_PREFIX } from '../../../shared/session-attachment-rag/logging'
 import { ensureMessageFileSessionAttachment } from '../sessionAttachmentRagIndexing'
 import * as settingActions from '../settingActions'
-import { settingsStore } from '../settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, settingsStore } from '../settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 import { guardSessionAction } from './action-guard'
 import { getSessionSettings, getSessionTokenModel } from './session-settings'
 import { getSessionWebBrowsing } from './utils'
@@ -285,7 +287,7 @@ export async function submitNewUserMessageUnlocked(
   await insertMessage(sessionId, newUserMsg)
   newUserMsg = await attachLargeFileRagMetadata(sessionId, newUserMsg)
 
-  const globalSettings = settingsStore.getState().getSettings()
+  const globalSettings = getSettingsSnapshot()
   const isPro = settingActions.isPro()
   const remoteConfig = await settingActions.getRemoteConfig()
 

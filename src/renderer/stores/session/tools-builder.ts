@@ -34,7 +34,9 @@ import {
 import { PROVIDERS_WITH_PARSE_LINK } from '@/packages/web-search'
 import platform from '@/platform'
 import * as settingActions from '@/stores/settingActions'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 
 // Cache discoverSkills() to avoid IPC on every message generation
 let cachedSkills: Array<{ name: string; description: string }> | null = null
@@ -553,7 +555,7 @@ When you create a Git commit that includes code changes, append this exact trail
   // Skills tools: agent mode only, requires model support
   if (includeAgentTools) {
     const allSkills = await getDiscoveredSkills()
-    const skillSettings = settingsStore.getState().getSettings().skills
+    const skillSettings = getSettingsSnapshot().skills
     const enabledSkills = allSkills.filter((s) => skillSettings.enabledSkillNames.includes(s.name))
     const userExecWorkingDirectory = options.sessionSettings?.workingDirectories?.find((dir) => dir.trim().length > 0)
     instructions += buildSkillToolsInstruction(
@@ -590,7 +592,7 @@ When you create a Git commit that includes code changes, append this exact trail
   // persist immediately but the running session keeps its frozen persona
   // snapshot, so they only affect future sessions. The 'agent' tool-use scope
   // keeps weak function-calling models tool-free.
-  const globalSettingsForTools = options.globalSettings ?? settingsStore.getState().getSettings()
+  const globalSettingsForTools = options.globalSettings ?? getSettingsSnapshot()
   const memoryScope = options.memoryScope ?? { type: 'global' as const }
   const memoryToolsEnabled = memoryScope.type === 'copilot' || globalSettingsForTools.memoryEnabled !== false
   if (memoryToolsEnabled && modelSupportsAgentTools) {
@@ -627,7 +629,7 @@ function buildLoadSkillTool(options: BuildToolsOptions): ToolSet[string] {
     }),
     execute: async (input) => {
       const skillInput = input as { name: string }
-      const skillSettings = settingsStore.getState().getSettings().skills
+      const skillSettings = getSettingsSnapshot().skills
       if (!skillSettings.enabledSkillNames.includes(skillInput.name)) {
         return {
           error: `Skill "${skillInput.name}" is not enabled. Check available skills in the system instructions.`,

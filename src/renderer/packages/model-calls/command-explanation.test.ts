@@ -15,6 +15,7 @@ vi.mock('@/packages/model-calls/message-utils', () => ({
 }))
 
 vi.mock('@/stores/settingsStore', () => ({
+  getSettingsSnapshot: () => ({ language: 'en' }),
   settingsStore: {
     getState: () => ({
       getSettings: () => ({ language: 'en' }),

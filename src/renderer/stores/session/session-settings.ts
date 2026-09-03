@@ -3,7 +3,9 @@ import { useMemo } from 'react'
 import { rendererApplication } from '@/app/renderer-application'
 import type { TokenModel } from '@/packages/token'
 import * as defaults from '../../../shared/defaults'
-import { settingsStore, useSettingsStore } from '../settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, settingsStore, useSettingsStore } from '../settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 
 const useSession = (sessionId: string | null) => rendererApplication.sessionHooks.useSession(sessionId)
 
@@ -39,7 +41,7 @@ export function useSessionSettings(sessionId: string | null) {
 export async function getSessionSettings(sessionId: string) {
   const session = await rendererApplication.sessionQueryBridge.getSession(sessionId)
   if (!session) {
-    const globalSettings = settingsStore.getState().getSettings()
+    const globalSettings = getSettingsSnapshot()
     return SessionSettingsSchema.parse(globalSettings)
   }
   return mergeDefaultSessionSettings(session)

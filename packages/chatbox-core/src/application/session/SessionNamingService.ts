@@ -129,24 +129,49 @@ export class SessionNamingService {
     }
     if (this.dependencies.settings.getSettings().autoGenerateTitle === false) return
     const action = resolveAutoTitleAction(session)
-    // [CUSTOM-BEGIN] CUSTOM-20260903-002 - copilot chats keep the copilot's name as the thread
-    // title unless autoNameCopilotThreads is explicitly enabled; only the
-    // thread-title naming path is suppressed, the Untitled session path is not.
-    if (
-      action === 'thread' &&
-      session.copilotId !== undefined &&
-      this.dependencies.settings.getSettings().autoNameCopilotThreads !== true
-    ) {
+    // [CUSTOM-BEGIN] CUSTOM-20260903-006 - copilot chats keep the copilot's name as the thread
+    // title unless autoNameCopilotThreads is explicitly enabled. When enabled, the FIRST
+    // conversation of a fresh copilot chat (no archived threads yet) takes the name-and-thread
+    // path so the generated title also replaces the session name (sidebar/header display),
+    // matching how non-copilot Untitled chats behave. Later "New Thread" rounds stay on the
+    // upstream 'thread' path (threadName only, session name untouched).
+    let effectiveAction = action
+    const copilotAutoNaming =
+      session.copilotId !== undefined && this.dependencies.settings.getSettings().autoNameCopilotThreads === true
+    if (action === 'thread' && session.copilotId !== undefined && !copilotAutoNaming) {
       return
     }
-    // [CUSTOM-END] CUSTOM-20260903-002
+    if (action === 'thread' && copilotAutoNaming && !(session.threads?.length)) {
+      effectiveAction = 'session-and-thread'
+    }
+    // [CUSTOM-END] CUSTOM-20260903-006
     const nextOptions = { ...options, threadIdentity: getCurrentThreadNamingIdentity(session) }
-    if (action === 'session-and-thread') {
-      this.scheduleNameAndThreadName(session.id, nextOptions)
-    } else if (action === 'thread') {
+    if (effectiveAction === 'session-and-thread') {
+      this.scheduleCopilotAwareNameAndThreadName(session, nextOptions)
+    } else if (effectiveAction === 'thread') {
       this.scheduleThreadName(session.id, nextOptions)
     }
   }
+
+  // [CUSTOM-BEGIN] CUSTOM-20260903-006 - scheduleNameAndThreadName's Untitled guard would block
+  // the write for copilot sessions (their name is the copilot's name); copilot chats
+  // with autoNameCopilotThreads enabled may overwrite that name on their first conversation.
+  private scheduleCopilotAwareNameAndThreadName(session: Session, options: SessionNameGenerationOptions): void {
+    const copilotAutoNaming = session.copilotId !== undefined
+    const mayWriteSessionName = (current: Session): boolean =>
+      current.name === UNTITLED_SESSION_NAME || copilotAutoNaming
+    const isEligible = (current: Session): boolean =>
+      mayWriteSessionName(current) && !current.threadName && hasContentForAutoTitle(current.messages)
+    this.schedule(
+      buildNameGenerationAttemptKey('name', session.id, options.threadIdentity),
+      session.id,
+      isEligible,
+      () => this.generate(session.id, 'name-and-thread', options.locale, isEligible),
+      options.messages,
+      options.threadIdentity
+    )
+  }
+  // [CUSTOM-END] CUSTOM-20260903-004
 
   clearSessionState(sessionId: string): void {
     for (const key of this.keysForSession(sessionId)) {

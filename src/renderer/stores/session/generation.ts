@@ -11,7 +11,9 @@ import { currentGenerationService } from '@/adapters/CurrentGenerationService'
 import { rendererApplication } from '@/app/renderer-application'
 import { assessContextPressure, getConfiguredContextWindow } from '@/packages/context-management/context-pressure'
 import { estimateTokensFromMessages } from '@/packages/token'
-import { settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, settingsStore } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 import { guardSessionAction } from './action-guard'
 import { createAttachmentResolver } from './attachment-resolver'
 import { createNewFork, createSaveAndResendFork, findMessageLocation } from './forks'
@@ -275,7 +277,7 @@ export async function genMessageContext(
 
   // Same pressure gating as the agent harness: keep tool history intact until
   // the context approaches the compaction threshold, then stub old results.
-  const globalSettings = settingsStore.getState().getSettings()
+  const globalSettings = getSettingsSnapshot()
   const contextPressure = assessContextPressure({
     contextMessages: selectContextMessages(msgs, {
       compactionPoints,

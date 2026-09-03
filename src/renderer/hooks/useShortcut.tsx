@@ -8,7 +8,8 @@ import platform from '../platform'
 import { currentSessionIdAtom } from '../stores/atoms'
 import { switchToIndex, switchToNext } from '../stores/session/crud'
 import { startNewThread } from '../stores/session/threads'
-import { settingsStore } from '../stores/settingsStore'
+import { getSettingsSnapshot } from '../stores/settingsStore'
+import * as toastActions from '../stores/toastActions'
 import * as dom from './dom'
 import { useIsSmallScreen } from './useScreenChange'
 
@@ -55,10 +56,19 @@ export default function useShortcut() {
     }
     const cancelOnFocus = platform.type === 'desktop' ? platform.onWindowFocused(focusMessageInput) : () => {}
     const cancelOnShow = platform.onWindowShow(focusMessageInput)
+    // [CUSTOM-BEGIN] CUSTOM-20260903-004 - surface window-toggle shortcut registration failures from main
+    const cancelOnShortcutFailure = platform.onShortcutRegistrationFailed?.((accelerator) => {
+      toastActions.add(
+        `Failed to register the Show/Hide Window shortcut (${accelerator}). It may be taken by another app.`,
+        6000,
+        { label: 'Settings', settingsPath: '/settings/hotkeys' }
+      )
+    })
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       cancelOnFocus()
       cancelOnShow()
+      cancelOnShortcutFailure?.()
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isSmallScreen])
@@ -66,7 +76,7 @@ export default function useShortcut() {
   function keyboardShortcut(e: KeyboardEvent) {
     // 这里不用 e.key 是因为 alt、 option、shift 都会改变 e.key 的值
     const shift = e.shiftKey
-    const shortcuts = settingsStore.getState().getSettings().shortcuts
+    const shortcuts = getSettingsSnapshot().shortcuts
 
     const ctrlKey = getOS() === 'Mac' ? e.metaKey : e.ctrlKey
 

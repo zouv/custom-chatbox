@@ -25,7 +25,9 @@ import {
   updateRecord,
 } from './imageGenerationStore'
 import { queryClient } from './queryClient'
-import { settingsStore } from './settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, settingsStore } from './settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 
 const log = getLogger('image-generation-actions')
 
@@ -315,7 +317,7 @@ async function generateImagesDirect(recordId: string, params: GenerateImageParam
 
     // Build model instance via provider registry
     const dependencies = await createModelDependencies()
-    const globalSettings = settingsStore.getState().getSettings()
+    const globalSettings = getSettingsSnapshot()
     const configs = await platform.getConfig()
     const sessionSettings = {
       provider: params.model.provider,

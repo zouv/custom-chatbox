@@ -325,10 +325,26 @@ function registerShortcuts(shortcutSetting?: ShortcutSetting) {
   try {
     const quickToggle = normalizeShortcut(shortcutSetting.quickToggle)
     if (isValidShortcut(quickToggle)) {
-      globalShortcut.register(quickToggle, () => showOrHideWindow())
+      // [CUSTOM-BEGIN] CUSTOM-20260903-004 - surface silent globalShortcut registration failures
+      // globalShortcut.register returns false when another app already holds the
+      // accelerator; without this the window-toggle hotkey silently stops working.
+      const registered = globalShortcut.register(quickToggle, () => showOrHideWindow())
+      if (registered) {
+        log.info(`shortcut [windowQuickToggle] registered: ${quickToggle}`)
+        lastQuickToggleRegistrationFailed = false
+      } else {
+        log.error(`shortcut [windowQuickToggle] registration FAILED (accelerator taken by another app): ${quickToggle}`)
+        lastQuickToggleRegistrationFailed = true
+        mainWindow?.webContents.send('shortcut-registration-failed', quickToggle)
+      }
+      // [CUSTOM-END] CUSTOM-20260903-004
     }
   } catch (error) {
     log.error('Failed to register shortcut [windowQuickToggle]:', error)
+    // [CUSTOM-BEGIN] CUSTOM-20260903-004 - notify renderer when the accelerator string is invalid
+    lastQuickToggleRegistrationFailed = true
+    mainWindow?.webContents.send('shortcut-registration-failed', shortcutSetting.quickToggle)
+    // [CUSTOM-END] CUSTOM-20260903-004
   }
 }
 
@@ -336,8 +352,20 @@ function unregisterShortcuts() {
   if (!MAIN_RUNTIME_POLICY.registerGlobalShortcuts) {
     return
   }
+  // [CUSTOM-BEGIN] CUSTOM-20260903-004 - reset last-known registration state on full unregister
+  lastQuickToggleRegistrationFailed = false
+  // [CUSTOM-END] CUSTOM-20260903-004
   return globalShortcut.unregisterAll()
 }
+
+// [CUSTOM-BEGIN] CUSTOM-20260903-004 - retry window-toggle registration when the window regains focus;
+// another app that held the accelerator may have exited since the last failed attempt.
+let lastQuickToggleRegistrationFailed = false
+function retryQuickToggleRegistrationIfFailed() {
+  if (!MAIN_RUNTIME_POLICY.registerGlobalShortcuts || !lastQuickToggleRegistrationFailed) return
+  registerShortcuts()
+}
+// [CUSTOM-END] CUSTOM-20260903-004
 
 // --------- Tray 图标 ---------
 
@@ -557,6 +585,9 @@ async function createWindow() {
 
   mainWindow.on('focus', () => {
     mainWindow?.webContents.send('window:focused')
+    // [CUSTOM-BEGIN] CUSTOM-20260903-004 - self-heal a failed window-toggle shortcut registration
+    retryQuickToggleRegistrationIfFailed()
+    // [CUSTOM-END] CUSTOM-20260903-004
   })
 
   const menuBuilder = new MenuBuilder(mainWindow)

@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { createModelDependencies } from '@/adapters'
 import { getRegistry, useModelRegistryVersion } from '@/packages/model-registry'
 import platform from '@/platform'
-import { settingsStore, useSettingsStore } from '@/stores/settingsStore'
+// [CUSTOM-BEGIN] CUSTOM-20260903-005 - settings access via getSettingsSnapshot (safe against action loss)
+import { getSettingsSnapshot, useSettingsStore } from '@/stores/settingsStore'
+// [CUSTOM-END] CUSTOM-20260903-005
 
 interface SelectedModel {
   provider: string
@@ -37,7 +39,7 @@ export function useModelToolCapabilities(
       // a cold start can cache a false negative from an older bundled snapshot.
       await getRegistry()
 
-      const globalSettings = settingsStore.getState().getSettings()
+      const globalSettings = getSettingsSnapshot()
       const configs = await platform.getConfig()
       const dependencies = await createModelDependencies()
       const settings = {

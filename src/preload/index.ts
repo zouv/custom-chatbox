@@ -58,6 +58,9 @@ const electronHandler: ElectronIPC = {
     return () => ipcRenderer.off('navigate-to', listener)
   },
   onSkillsBuiltinUpdated: createListener('skills:builtin-updated'),
+  // [CUSTOM-BEGIN] CUSTOM-20260903-004 - main pushes this when the window-toggle global shortcut fails to register
+  onShortcutRegistrationFailed: createListener<[string]>('shortcut-registration-failed'),
+  // [CUSTOM-END] CUSTOM-20260903-004
 
   // Auto-updater events
   onUpdaterChecking: createListener('updater:checking'),

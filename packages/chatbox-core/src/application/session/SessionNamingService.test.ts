@@ -318,6 +318,55 @@ describe('SessionNamingService', () => {
   })
   // [CUSTOM-END] CUSTOM-20260903-002
 
+  // [CUSTOM-BEGIN] CUSTOM-20260903-004 - enabled copilot naming writes BOTH session name and thread name
+  test('copilot auto naming renames the session name and threadName when enabled', async () => {
+    const harness = createHarness()
+    harness.settings.autoNameCopilotThreads = true
+    harness.setSession(createSession({ name: 'Travel planner', threadName: '', copilotId: 'copilot-1' }))
+
+    harness.service.syncAutoTitle(harness.session!)
+    harness.scheduled[0].callback()
+    await vi.waitFor(() => expect(harness.session?.name).toBe('北京旅行计划'))
+    expect(harness.session?.threadName).toBe('北京旅行计划')
+  })
+
+  test('copilot auto naming off keeps the copilot name and pending threadName untouched', async () => {
+    const harness = createHarness()
+    harness.setSession(createSession({ name: 'Travel planner', threadName: '', copilotId: 'copilot-1' }))
+
+    harness.service.syncAutoTitle(harness.session!)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(harness.chat).not.toHaveBeenCalled()
+    expect(harness.session?.name).toBe('Travel planner')
+    expect(harness.session?.threadName).toBe('')
+  })
+
+  // [CUSTOM-BEGIN] CUSTOM-20260903-006 - later New-Thread rounds must not re-rename the session name
+  test('copilot auto naming skips the session-name rewrite after a New Thread archived a conversation', () => {
+    const harness = createHarness()
+    harness.settings.autoNameCopilotThreads = true
+    harness.setSession(
+      createSession({
+        name: '双语搜索',
+        threadName: '',
+        copilotId: 'copilot-1',
+        threads: [
+          { id: 'archived-1', name: '首轮对话', messages: createSession().messages, createdAt: 1 },
+        ],
+      })
+    )
+
+    harness.service.syncAutoTitle(harness.session!)
+
+    // Still schedules the upstream thread-only naming (thread label, session name untouched)
+    expect(harness.scheduled).toHaveLength(1)
+    const firstUserId = harness.session!.messages.find((m) => m.role === 'user')!.id
+    expect(harness.service.isPending(buildNameGenerationAttemptKey('thread', 'session-1', firstUserId))).toBe(true)
+    expect(harness.service.isPending(buildNameGenerationAttemptKey('name', 'session-1'))).toBe(false)
+  })
+  // [CUSTOM-END] CUSTOM-20260903-006
+  // [CUSTOM-END] CUSTOM-20260903-004
+
   test('cancels pending work and clears retry state when a Session is deleted', () => {
     const harness = createHarness()
     harness.service.scheduleNameAndThreadName('session-1')
