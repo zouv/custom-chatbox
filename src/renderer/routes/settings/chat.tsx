@@ -418,6 +418,21 @@ export function RouteComponent() {
               })
             }
           />
+          {/* [CUSTOM-BEGIN] CUSTOM-20260903-002 - auto-name copilot chats' new threads */}
+          <Switch
+            label={t('Auto-Name New Topics of Copilot Chats')}
+            description={t(
+              'When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.'
+            )}
+            checked={settings.autoNameCopilotThreads ?? false}
+            onChange={() =>
+              setSettings({
+                ...settings,
+                autoNameCopilotThreads: !(settings.autoNameCopilotThreads ?? false),
+              })
+            }
+          />
+          {/* [CUSTOM-END] CUSTOM-20260903-002 */}
           <Switch
             data-testid={TestId.settings.pauseOnToolCallLimitSwitch}
             label={t('Pause after every {{count}} steps', { count: MAX_TOOL_CALLS_BEFORE_CONFIRMATION })}

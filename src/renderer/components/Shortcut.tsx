@@ -42,12 +42,18 @@ function formatKey(key: string) {
     ...COMMON_KEY_MAPS,
     meta: 'Win',
     // command: 'Win',
+    // [CUSTOM-BEGIN] CUSTOM-20260903-002 - display Super modifier as Win on Windows
+    super: 'Win',
+    // [CUSTOM-END] CUSTOM-20260903-002
   }
   const LINUX_KEY_MAPS: Record<string, string> = {
     ...COMMON_KEY_MAPS,
     meta: 'Super',
     mod: 'Super',
     command: 'Super',
+    // [CUSTOM-BEGIN] CUSTOM-20260903-002 - display Super modifier for Super+Shift+Space preset
+    super: 'Super',
+    // [CUSTOM-END] CUSTOM-20260903-002
   }
   if (!key) {
     return ''

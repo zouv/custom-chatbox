@@ -42,12 +42,24 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | CUSTOM-20260902-004 | 2026-09-02 | config | .agents/skills/（chatbox-merge-upstream、chatbox-record-change、chatbox-release）、AGENTS.md | 将 `.trae/skills/` 三个项目 skill 迁移到 `.agents/skills/`（ZCode 原生发现路径，跨工具共享）；`.trae/rules/project_rules.md` 的分支模型、冲突解决规则、合并测试要求合并进 AGENTS.md 后删除 `.trae/` 目录，不再依赖 Trae 私有约定 | keep-ours | active |
 | CUSTOM-20260902-005 | 2026-09-02 | config | CUSTOMIZATIONS/README.md（新增）、CUSTOMIZATIONS/registry.md（自根目录 CUSTOMIZATIONS.md 迁移）、CUSTOMIZATIONS/release-notes/v1.23.0-custom.1.md（归档）、AGENTS.md、.agents/skills/*/SKILL.md、CUSTOMIZATIONS/scripts/init-repo.ps1、CUSTOMIZATIONS/scripts/list-custom.ps1 | CUSTOMIZATIONS 机制重组：规则与账本分离。新建 CUSTOMIZATIONS/README.md 作为规则唯一完整版（冲突策略表、类型/状态字典、frontmatter 字段职责表、标记格式）；registry.md 瘦身为纯账本（frontmatter+改动清单+变更日志，历史条目未改）；根目录 AGENTS.md 精简为会话级硬约束+指针；发布说明归档到 release-notes/ 子目录；三个 skill 与两个脚本的路径引用同步更新；删除 record-change 中"frontmatter 由脚本维护"的虚假声明 | keep-ours | active |
 | CUSTOM-20260903-001 | 2026-09-03 | config | .gitignore | gitignore 新增 `.zcode/plans/` 忽略规则（带 [CUSTOM] 标记包裹）：ZCode 会话本地生成的计划文档不提交。注意只忽略 plans 子目录，`.zcode/` 下其他路径（skills/commands/config.json）是 ZCode 工作区级共享配置，将来可能使用，保留跟踪 | keep-ours | active |
+| CUSTOM-20260903-002 | 2026-09-03 | modified-upstream | packages/chatbox-core/src/domain/settings/settings-schema.ts、packages/chatbox-core/src/domain/settings/settings-defaults.ts、packages/chatbox-core/src/application/session/SessionNamingService.ts、packages/chatbox-core/src/application/session/SessionNamingService.test.ts、src/renderer/routes/settings/chat.tsx、src/renderer/components/Shortcut.tsx、src/renderer/i18n/locales/*/translation.json（14 个语言文件） | 双功能：1) 键盘快捷键「显示/隐藏应用窗口」(quickToggle) 预设组合新增 Super+Shift+Space（Windows 下即 Win+Shift+Space）；2) 新增设置项 autoNameCopilotThreads（设置→对话设置→功能，默认关闭），开启后 Copilot（搭档）对话的新话题用默认话题命名模型（threadNamingModel）自动命名，关闭时保持上游行为（话题以搭档名命名） | merge-manual | active |
 
 **类型/冲突策略/状态字典**：见 [`CUSTOMIZATIONS/README.md`](./README.md) 的"条目类型与状态字典"与"冲突策略速查"两节。
 
 ---
 
 ## 变更日志
+
+### 2026-09-03 - CUSTOM-20260903-002
+- **功能**：快捷键新增 Win+Shift+Space 预设；搭档对话新话题自动命名开关
+- **改动文件**：packages/chatbox-core/src/domain/settings/settings-schema.ts、packages/chatbox-core/src/domain/settings/settings-defaults.ts、packages/chatbox-core/src/application/session/SessionNamingService.ts、packages/chatbox-core/src/application/session/SessionNamingService.test.ts、src/renderer/routes/settings/chat.tsx、src/renderer/components/Shortcut.tsx、src/renderer/i18n/locales/{en,zh-Hans,zh-Hant,ja,ko,de,fr,es,it-IT,pt-PT,ru,ar,sv,nb-NO}/translation.json
+- **详细说明**：
+  - 快捷键：`shortcutToggleWindowValues` 数组新增 `'Super+Shift+Space'`（与 CUSTOM-20260902-001 的 Alt+Shift+Space 合并到同一标记块）。Electron accelerator 用 `Super` 表示 Windows 键；主进程 `normalizeShortcut`（src/main/main.ts）无需转换直接透传，`isValidShortcut` 的修饰键列表已含 `super`。渲染层 Shortcut.tsx 的 `formatKey` 补充了 `super` → Win（Windows）/Super（Linux）的显示映射（macOS 无该映射，显示原文 Super）
+  - 搭档话题自动命名：上游机制为——Copilot 会话创建时 `name`=搭档名、`threadName=''`（待命名），首次回复成功后 `resolveAutoTitleAction` 返回 `'thread'` 并调度 `scheduleThreadName`（用 threadNamingModel 生成、只写 threadName）；显示层优先展示 threadName，因此话题名会覆盖搭档名。本改动在 `SessionNamingService.syncAutoTitle` 中加了门槛：`action === 'thread'` 且 `session.copilotId` 存在且 `autoNameCopilotThreads !== true` 时直接 return，即默认关闭时搭档话题保持搭档名；`'session-and-thread'`（name 仍为 Untitled 的会话，如从话题晋升的新会话）不受影响，`autoGenerateTitle` 总开关与 backfill 逻辑也不受影响
+  - 设置项：SettingsSchema 新增 `autoNameCopilotThreads: z.boolean().default(false)`（位于 SettingsSchema 层、不在 GlobalSessionSettingsSchema，纯全局设置不随会话下发）；settings-defaults.ts 同步默认值；设置 UI 开关放在 设置→对话设置→功能 小节、「自动生成聊天标题」之后，带说明文案；14 个语言文件均补充两条翻译键（`Auto-Name New Topics of Copilot Chats` 及其描述）
+  - 注意：该开关只控制"首次回复后的 AI 命名"；用户手动改名（Header 编辑）不受影响。上游合并时若 syncAutoTitle 被重构，按函数名找新位置重放该 if 块
+- **验证方式**：`npx vitest run packages/chatbox-core/src/application/session/SessionNamingService.test.ts`（21 过，含新增的 copilot 门槛用例：默认关闭跳过、开启调度、Untitled Copilot 不受影响）；`npx tsc --noEmit -p tsconfig.json` 与 `-p packages/chatbox-core/tsconfig.json` 无错误；biome check 全部改动文件无新增诊断（已 apply organizeImports 修复）；全套 vitest 4078 过 / 26 败——失败项（src/main/skills、session-attachment-rag、sandbox 等路径分隔符/环境类）在改动前的干净树上同样失败，与本次改动无关
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-03 - CUSTOM-20260903-001
 - **功能**：gitignore 忽略 ZCode 会话本地计划文档

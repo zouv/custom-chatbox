@@ -115,6 +115,8 @@
   "Auto Compaction": "자동 압축",
   "Auto-collapse code blocks": "코드 블록 자동 접기",
   "Auto-Generate Chat Titles": "채팅 제목 자동 생성",
+  "Auto-Name New Topics of Copilot Chats": "Copilot 채팅의 새 토픽 자동 명명",
+  "When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.": "켜면 Copilot 채팅의 새 토픽이 Copilot 이름 대신 기본 토픽 명명 모델로 자동 명명됩니다.",
   "Auto-preview artifacts": "아티팩트 자동 미리보기",
   "Automatic updates": "자동 업데이트",
   "Automatically render generated artifacts (e.g., HTML with CSS, JS, Tailwind)": "생성된 아티팩트 자동 렌더링 (예: CSS, JS, Tailwind가 포함된 HTML)",
