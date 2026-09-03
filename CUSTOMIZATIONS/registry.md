@@ -45,19 +45,19 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 
 | 文件 | 标记（当前） | 演进链 | 当前效果（合并后） | 冲突策略 | 状态 |
 |------|-------------|--------|-------------------|---------|------|
-| packages/chatbox-core/src/domain/settings/settings-schema.ts | 002 | 20260902-001→002 | quickToggle 预设新增 Alt+Shift+Space 与 Super+Shift+Space；SettingsSchema 新增 autoNameCopilotThreads（boolean，default false） | merge-manual | active |
-| packages/chatbox-core/src/domain/settings/settings-defaults.ts | 002 | 002 | createDefaultSettings 含 autoNameCopilotThreads: false（与 schema 必须同步） | merge-manual | active |
+| packages/chatbox-core/src/domain/settings/settings-schema.ts | 002/008 | 20260902-001→002→008 | quickToggle 预设新增 Alt+Shift+Space 与 Super+Shift+Space；ShortcutSettingSchema 新增 openThreadHistory（z.string().default('mod+h')）；SettingsSchema 新增 autoNameCopilotThreads（boolean，default false） | merge-manual | active |
+| packages/chatbox-core/src/domain/settings/settings-defaults.ts | 002/008 | 002→008 | createDefaultSettings 含 autoNameCopilotThreads: false 与 shortcuts.openThreadHistory: 'mod+h'（与 schema 必须同步） | merge-manual | active |
 | packages/chatbox-core/src/application/session/SessionNamingService.ts | 006 | 20260903-002→004→006 | syncAutoTitle 内搭档命名门槛：开关关闭时 copilot 会话跳过 thread 命名；开启时仅"无归档话题的会话首轮"升级 name-and-thread（写 name+threadName），话题轮次保持上游 thread-only；scheduleCopilotAwareNameAndThreadName 放宽 Untitled 写保护 | merge-manual | active |
 | packages/chatbox-core/src/application/session/SessionNamingService.test.ts | （测试文件，无标记） | 002→004→006 | 命名门槛/升级/新话题排除共 5 个自定义用例 | keep-ours | active |
 | src/renderer/routes/settings/chat.tsx | 002 | 002 | 对话设置→功能：「使用搭档的新话题开启自动命名」开关（默认关） | merge-manual | active |
-| src/renderer/components/Shortcut.tsx | 002 | 002 | formatKey 增加 super→Win（Windows）/Super（Linux）显示映射 | merge-manual | active |
+| src/renderer/components/Shortcut.tsx | 002/008 | 002→008 | formatKey 增加 super→Win（Windows）/Super（Linux）显示映射；ShortcutConfig 新增「历史话题」条目（name: openThreadHistory，只读展示，复用现有 Thread History i18n 键） | merge-manual | active |
 | src/renderer/i18n/locales/*/translation.json（14 个） | （无标记，已知缺口） | 002 | 每语言新增 2 个键：Auto-Name New Topics of Copilot Chats 及其描述 | merge-manual | active |
 | src/main/main.ts | 004 | 004 | registerShortcuts 记录注册结果日志、失败经 shortcut-registration-failed 推渲染层、窗口 focus 自愈重试（lastQuickToggleRegistrationFailed） | merge-manual | active |
 | src/preload/index.ts | 004 | 004 | 暴露 onShortcutRegistrationFailed（createListener） | merge-manual | active |
 | src/shared/electron-types.ts | 004 | 004 | ElectronIPC 接口加 onShortcutRegistrationFailed | merge-manual | active |
 | src/renderer/platform/interfaces.ts | 004 | 004 | Platform 接口加 onShortcutRegistrationFailed（可选） | merge-manual | active |
 | src/renderer/platform/desktop_platform.ts | 004 | 004 | DesktopPlatform 实现 onShortcutRegistrationFailed | merge-manual | active |
-| src/renderer/hooks/useShortcut.tsx | 004 | 004 | 订阅 shortcut-registration-failed 弹 toast（带设置跳转）；读设置改用 getSettingsSnapshot | merge-manual | active |
+| src/renderer/hooks/useShortcut.tsx | 004/008 | 004→008 | 订阅 shortcut-registration-failed 弹 toast（带设置跳转）；读设置改用 getSettingsSnapshot；keyboardShortcut 新增 isShortcutPressed(openThreadHistory) → openThreadHistoryDrawer（经 sessionQueryBridge 取 session、isThreadHistoryAvailable 判定后设 showThreadHistoryDrawerAtom=true） | merge-manual | active |
 | packages/chatbox-react/src/stores/createSettingsStore.ts | 005 | 005 | service.subscribe 回声改函数式合并（保留 action 方法，防 state 被整体替换丢 action） | merge-manual | active |
 | src/renderer/stores/settingsStore.ts | 005 | 005 | 新增 getSettingsSnapshot()：action 可用走 getSettings()，否则直接读 state 字段（命令式读设置的唯一合法入口） | merge-manual | active |
 | src/renderer/stores/sessionHelpers.ts | 005 | 005 | initEmptyChatSession 容错读设置（getSettings 不可用时读 state） | merge-manual | active |
@@ -73,6 +73,7 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | src/renderer/pages/RemoteDialogWindow.tsx | 005 | 005 | 同上 | merge-manual | active |
 | src/renderer/setup/storage_clear.ts | 005 | 005 | 同上 | merge-manual | active |
 | 6 个测试文件（mock settingsStore） | （测试文件，无标记） | 005 | agent-harness / tools-builder / streaming-message / useModelToolCapabilities / command-explanation / storage_clear 的 vi.mock 补 getSettingsSnapshot 导出 | keep-ours | active |
+| src/shared/defaults.test.ts | （测试文件，无标记） | 008 | shortcuts 键断言补 openThreadHistory（= 'mod+h'） | keep-ours | active |
 | electron-builder.yml | 20260902-002 | 20260902-002 | 移除上游残留 win.signtoolOptions（无签名构建） | merge-manual | active |
 | .gitignore | 20260903-001 | 20260903-001 | 忽略 .zcode/plans/（ZCode 会话本地计划文档） | keep-ours | active |
 | CUSTOMIZATIONS/scripts/（manager.sh、build-unpacked.bat、build-setup.bat、7za-shim.*、init-repo.ps1、list-custom.ps1、check-registry.sh） | （纯自定义目录，逐文件标记非必需） | 20260902-003→003→007 | 本地操作与打包脚本套件：manager.sh 统一入口；两个 bat 打 unpacked/Setup 包；7za shim 修 winCodeSign 解压；check-registry 一致性自检 | keep-ours | active |
@@ -82,6 +83,18 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---
 
 ## 变更日志
+
+### 2026-09-03 - CUSTOM-20260903-008
+- **功能**：新增 Ctrl/Cmd+H 快捷键直接打开会话「历史话题」抽屉（此前只能经右上角 … 菜单进入）
+- **改动文件**：packages/chatbox-core/src/domain/settings/settings-schema.ts、packages/chatbox-core/src/domain/settings/settings-defaults.ts、src/renderer/hooks/useShortcut.tsx、src/renderer/components/Shortcut.tsx、src/shared/defaults.test.ts
+- **详细说明**：
+  - 需求：用户希望键盘快捷打开"历史话题"侧边面板，并在 设置→键盘快捷键 可见
+  - 实现：ShortcutSettingSchema 新增 `openThreadHistory`（z.string().default('mod+h')，`mod` 约定与 newChat mod+n / dialogOpenSearch mod+k 一致，Windows 上实际是 Ctrl+H、macOS 上 ⌘+H；settings-defaults.ts 同步默认值）；useShortcut 的 keyboardShortcut 中用既有 `isShortcutPressed` 匹配后调 `openThreadHistoryDrawer()`——取当前路由 session（fallback currentSessionIdAtom）、经 rendererApplication.sessionQueryBridge.getSession 拉取、`isThreadHistoryAvailable(session, resolveSessionMode(getSessionAgentModeEntry(...)))` 判定（与 Toolbar/ThreadHistoryDrawer 同一门槛：work 模式且无归档话题的会话没有抽屉可开，静默不响应）、通过则设 jotai `showThreadHistoryDrawerAtom=true` 打开抽屉
+  - 设置页：Shortcut.tsx 的 ShortcutConfig items 在「New Thread」后新增「历史话题」条目（name: 'openThreadHistory'，无 options → 只读展示，与 New Chat 等条目一致）；label 复用现有 i18n 键 "Thread History"（14 语言均已存在），**无需新增翻译**（避免 002 轮的 14 语言联动成本）
+  - 兼容性：应用内快捷键（window keydown），不经主进程 globalShortcut，无注册失败/占用问题；老 config.json 无该字段时 hydrate 的 deepmerge(defaults) + zod .default() 双重补默认值，迁移无需 bump SETTINGS_PERSIST_VERSION（加字段属向后兼容，短路过期策略与 autoNameCopilotThreads 002 轮同法）
+  - 主进程 registerShortcuts 只管 quickToggle（窗口显隐），无需改动
+- **验证方式**：`npx tsc --noEmit -p tsconfig.json` 0 错误；vitest：defaults.test 12 测（含新增 openThreadHistory 键与值断言）、mode-policy 9 测、ThreadHistoryDrawer 1 测、settings 域 11 测、createSettingsStore/RendererSettingsEffects 全过；biome 5 个改动文件无新增诊断（useShortcut 4 个 warning 与改动前基线一致，import 排序错误已修复）；手测路径：`pnpm run dev` → 会话内按 Ctrl+H 打开抽屉、… 菜单行为不变、Work 模式会话按 Ctrl+H 无响应
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-03 - CUSTOM-20260903-007
 - **功能**：registry.md 账本结构重组——改动总览按文件聚合（多轮演进合并），解决按次记录的冗余与"前改后改实际没改"不可读问题

@@ -90,6 +90,7 @@ describe('defaults', () => {
         'sessionListNavPrev',
         'sessionListNavTargetIndex',
         'messageListRefreshContext',
+        'openThreadHistory',
         'dialogOpenSearch',
         'inputBoxSendMessage',
         'inputBoxSendMessageWithoutResponse',
@@ -99,6 +100,7 @@ describe('defaults', () => {
       ].sort()
     )
     expect(result.messageListRefreshContext).toBe('mod+shift+n')
+    expect(result.openThreadHistory).toBe('mod+h')
     expect(result.newPictureChat).toBe('')
   })
 

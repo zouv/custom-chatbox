@@ -71,6 +71,9 @@ export function createDefaultSettings(): Settings {
       sessionListNavPrev: 'mod+shift+tab',
       sessionListNavTargetIndex: 'mod',
       messageListRefreshContext: 'mod+shift+n',
+      // [CUSTOM-BEGIN] CUSTOM-20260903-008 - open thread history drawer shortcut (Ctrl/Cmd+H)
+      openThreadHistory: 'mod+h',
+      // [CUSTOM-END] CUSTOM-20260903-008
       dialogOpenSearch: 'mod+k',
       inputBoxSendMessage: 'Enter',
       inputBoxSendMessageWithoutResponse: 'Ctrl+Enter',
