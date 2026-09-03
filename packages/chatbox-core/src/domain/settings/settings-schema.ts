@@ -298,6 +298,9 @@ const ShortcutToggleWindowValueSchema = z.enum(shortcutToggleWindowValues as [st
 const newThreadShortcut = 'mod+shift+n'
 const legacyNewThreadShortcut = 'mod+r'
 const legacyNewPictureChatShortcut = 'mod+shift+n'
+// [CUSTOM-BEGIN] CUSTOM-20260903-008 - open thread history drawer shortcut (Ctrl/Cmd+H)
+const openThreadHistoryShortcut = 'mod+h'
+// [CUSTOM-END] CUSTOM-20260903-008
 
 const ShortcutSettingSchema = z.preprocess(
   (value) => {
@@ -328,6 +331,9 @@ const ShortcutSettingSchema = z.preprocess(
     sessionListNavTargetIndex: z.string(),
     // Keep the historical key name so exported settings still load in downgrade/import paths.
     messageListRefreshContext: z.string().default(newThreadShortcut),
+    // [CUSTOM-BEGIN] CUSTOM-20260903-008 - open thread history drawer shortcut (Ctrl/Cmd+H)
+    openThreadHistory: z.string().default(openThreadHistoryShortcut),
+    // [CUSTOM-END] CUSTOM-20260903-008
     dialogOpenSearch: z.string(),
     optionNavUp: z.string(),
     optionNavDown: z.string(),

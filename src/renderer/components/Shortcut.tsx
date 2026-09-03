@@ -149,6 +149,13 @@ export function ShortcutConfig(props: {
       name: 'messageListRefreshContext',
       keys: shortcuts.messageListRefreshContext,
     },
+    // [CUSTOM-BEGIN] CUSTOM-20260903-008 - thread history drawer shortcut entry
+    {
+      label: t('Thread History'),
+      name: 'openThreadHistory',
+      keys: shortcuts.openThreadHistory,
+    },
+    // [CUSTOM-END] CUSTOM-20260903-008
     {
       label: t('Navigate to the Next Conversation'),
       name: 'sessionListNavNext',

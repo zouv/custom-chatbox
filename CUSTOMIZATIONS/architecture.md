@@ -66,10 +66,10 @@ CurrentSessionRepository (renderer adapter) ── IndexedDB(localforage) + meta
 | `packages/chatbox-core/src/application/session/` | SessionService / **SessionNamingService** / ThreadService / WriteCoordinator | 会话领域逻辑（命名规则改这里） |
 | `packages/chatbox-core/src/session/auto-title.ts` | 命名资格判定（resolveAutoTitleAction / threadName 语义） | 命名触发条件 |
 | `packages/chatbox-react/src/stores/createSettingsStore.ts` | settings zustand store 工厂（subscribe 回声、setState 桥接） | store state/action 行为 |
-| `packages/chatbox-core/src/domain/settings/settings-schema.ts` | Settings zod schema（含 CUSTOM 快捷键枚举、autoNameCopilotThreads） | 新设置字段 |
+| `packages/chatbox-core/src/domain/settings/settings-schema.ts` | Settings zod schema（含 CUSTOM 快捷键枚举/ openThreadHistory、autoNameCopilotThreads） | 新设置字段 |
 | `packages/chatbox-core/src/domain/settings/settings-defaults.ts` | createDefaultSettings | 同上（默认值必须同步） |
 | `src/renderer/routes/settings/chat.tsx` | 设置→对话设置页（功能开关区） | 新开关 UI |
-| `src/renderer/routes/settings/hotkeys.tsx` + `components/Shortcut.tsx` | 快捷键设置页与键位显示 | 快捷键 UI |
+| `src/renderer/routes/settings/hotkeys.tsx` + `components/Shortcut.tsx` | 快捷键设置页与键位显示 | 快捷键 UI（含 openThreadHistory 条目） |
 | `src/renderer/i18n/locales/*/translation.json` | 14 种语言翻译（**bat 脚本禁忌见 pitfalls #6**） | 新 UI 文案 |
 
 ---
@@ -113,9 +113,11 @@ CurrentSessionRepository (renderer adapter) ── IndexedDB(localforage) + meta
 |---|---|---|
 | 预设组合列表 | `shortcutToggleWindowValues`（settings-schema.ts） | 同时是 UI 下拉与 zod 枚举 |
 | 键位显示映射 | `formatKey`（components/Shortcut.tsx） | Windows 上 `super`→Win 需显式映射 |
-| 主进程注册 | `registerShortcuts`（main.ts） | 结果已记录日志；失败经 `shortcut-registration-failed` 推送渲染层 toast |
+| 主进程注册 | `registerShortcuts`（main.ts） | 只管 quickToggle 窗口显隐；结果已记录日志；失败经 `shortcut-registration-failed` 推送渲染层 toast |
 | 自愈重试 | `retryQuickToggleRegistrationIfFailed` + mainWindow 'focus' 事件 | 注册被占后焦点恢复时重试 |
 | 渲染层通知 | `useShortcut.tsx` 里 `platform.onShortcutRegistrationFailed` 订阅 | |
+| 应用内快捷键（key 值 mod+X） | `useShortcut.keyboardShortcut` → `isShortcutPressed` | openThreadHistory（mod+h，打开历史话题抽屉）等都在渲染层 keydown 处理，不走主进程 |
+| 历史话题抽屉开关 | `openThreadHistoryDrawer`（useShortcut.tsx）→ `showThreadHistoryDrawerAtom` | 经 `sessionQueryBridge.getSession` + `isThreadHistoryAvailable` 判定（与 Toolbar 同门槛） |
 
 ### 2.5 新建会话/新建话题
 

@@ -1,11 +1,14 @@
+import { isThreadHistoryAvailable, resolveSessionMode } from '@chatbox/core/session/mode-policy'
 import { getDefaultStore } from 'jotai'
 import { useEffect } from 'react'
+import { rendererApplication } from '@/app/renderer-application'
 import { navigateToSettings } from '@/modals/settings-navigation'
 import { router } from '@/router'
 import { uiStore } from '@/stores/uiStore'
 import { getOS } from '../packages/navigator'
 import platform from '../platform'
-import { currentSessionIdAtom } from '../stores/atoms'
+import { currentSessionIdAtom, showThreadHistoryDrawerAtom } from '../stores/atoms'
+import { getSessionAgentModeEntry } from '../stores/session/agent-mode'
 import { switchToIndex, switchToNext } from '../stores/session/crud'
 import { startNewThread } from '../stores/session/threads'
 import { getSettingsSnapshot } from '../stores/settingsStore'
@@ -40,6 +43,27 @@ function getRouteSessionId() {
   const sessionRouteMatch = router.state.location.pathname.match(/^\/session\/([^/]+)/)
   return sessionRouteMatch?.[1] ? decodeURIComponent(sessionRouteMatch[1]) : null
 }
+
+// [CUSTOM-BEGIN] CUSTOM-20260903-008 - Ctrl/Cmd+H opens the thread history drawer
+// Mirrors Toolbar's gating: the drawer only renders when thread history is
+// available for the current session (work-mode sessions with no archived
+// threads have no drawer to open).
+async function openThreadHistoryDrawer() {
+  const sessionId = getRouteSessionId() ?? getDefaultStore().get(currentSessionIdAtom)
+  if (!sessionId) {
+    return
+  }
+  const session = await rendererApplication.sessionQueryBridge.getSession(sessionId)
+  if (!session) {
+    return
+  }
+  const agentModeEntry = getSessionAgentModeEntry(sessionId, session)
+  if (!isThreadHistoryAvailable(session, resolveSessionMode(agentModeEntry.value))) {
+    return
+  }
+  getDefaultStore().set(showThreadHistoryDrawerAtom, true)
+}
+// [CUSTOM-END] CUSTOM-20260903-008
 
 export default function useShortcut() {
   const isSmallScreen = useIsSmallScreen()
@@ -108,6 +132,13 @@ export default function useShortcut() {
       }
       return
     }
+    // [CUSTOM-BEGIN] CUSTOM-20260903-008 - Ctrl/Cmd+H opens the thread history drawer
+    if (isShortcutPressed(e, shortcuts.openThreadHistory)) {
+      e.preventDefault()
+      void openThreadHistoryDrawer()
+      return
+    }
+    // [CUSTOM-END] CUSTOM-20260903-008
     // 创建新图片会话
     if (isShortcutPressed(e, shortcuts.newPictureChat)) {
       e.preventDefault()
