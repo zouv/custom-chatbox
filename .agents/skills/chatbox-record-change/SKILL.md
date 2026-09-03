@@ -79,7 +79,11 @@ sh CUSTOMIZATIONS/scripts/check-registry.sh
 
 脚本双向比对代码 `[CUSTOM-BEGIN]` 标记 ↔ 总览表。退出码非 0 时按提示修复（通常是忘了补标记或总览路径写法不匹配），**修到全绿才算登记完成**。
 
-### 第六步：提交
+### 第六步：汇报（不自动提交）
+
+登记完成后**停止并汇报**：改动、验证结果、check-registry 状态、建议的提交命令。**不要主动执行 git commit / git push**——提交时机由用户决定（见根 AGENTS.md 禁止操作第一条）。
+
+用户明确要求提交时，提交命令参考：
 
 ```bash
 git add CUSTOMIZATIONS/registry.md <被标记的修改文件>

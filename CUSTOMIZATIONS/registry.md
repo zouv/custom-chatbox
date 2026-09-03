@@ -1,10 +1,10 @@
 ---
 current_upstream_version: "v1.23.0"
 current_upstream_commit: "61191ae783aa629d83b7001634350ac29a7f10d0"
-custom_version: "0.0.0-custom.0"
+custom_version: "1.23.0-custom.2"
 last_merge_date: "2026-09-02"
-last_release_version: "v1.23.0-custom.1"
-last_release_date: "2026-09-02"
+last_release_version: "v1.23.0-custom.2"
+last_release_date: "2026-09-03"
 vendor_branch: "vendor/v1.23.x"
 upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---

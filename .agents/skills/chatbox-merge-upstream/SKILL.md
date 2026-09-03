@@ -376,3 +376,4 @@ git push origin custom/main --force-with-lease
 3. **vendor 分支上不做任何自定义修改**：vendor 分支是上游的纯净镜像，只接受来自 upstream 的 merge。
 4. **pnpm-lock.yaml 冲突处理**：发生冲突时，先接受上游版本，然后删除 node_modules 重新 `pnpm install` 生成新的 lock 文件，不要手动编辑 lock 文件。
 5. **不要删除 CUSTOMIZATIONS/registry.md 中的任何历史条目**：跨版本升级时需要参考所有历史改动。
+6. **本 skill 各步骤中的 commit / push 仅在用户明确发起合并请求时执行**——合并流程本身就是用户触发的操作，流程内按步骤提交推送是预期行为；但流程中止（冲突需要人工决策、验证失败）时停在未提交状态，先报告再等指示。
