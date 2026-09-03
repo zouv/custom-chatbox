@@ -7,21 +7,35 @@
 ```
 CUSTOMIZATIONS/
 ├── README.md        # 本文件：机制与规则完整版（唯一规则源）
-├── registry.md      # 账本：frontmatter 元数据 + 改动清单 + 变更日志
+├── architecture.md  # 代码链路图谱：文件职责 / 任务→代码位置 / 重点链路（面向 AI 的加速索引）
+├── registry.md      # 账本：frontmatter 元数据 + 改动总览（按文件）+ 变更日志（按次）
+├── docs/
+│   └── pitfalls.md  # 历史坑点沉淀：现象→根因→解法→教训（动手前先扫标题）
 ├── release-notes/   # 各自定义版本的发布说明归档
 ├── src/             # 新增的自定义源码（独立模块，通过入口挂载）
 ├── patches/         # 对上游文件的补丁
-└── scripts/         # 项目辅助脚本（init-repo / list-custom / sync-vendor 等）
+└── scripts/         # manager.sh / build-*.bat / check-registry.sh / init-repo / list-custom / sync-vendor 等
 ```
 
-核心约定：**一处规则（README.md）、一处账本（registry.md）、一处代码（src/）**。规则改动只改本文件；改动登记只写 registry.md；自定义代码优先放 src/。
+核心约定：**一处规则（README.md）、一处账本（registry.md）、一份代码地图（architecture.md）、一份坑点库（docs/pitfalls.md）**。规则改动只改本文件；改动登记只写 registry.md；代码结构变化同步 architecture.md；踩坑沉淀进 docs/pitfalls.md；自定义代码优先放 src/。
+
+## registry.md 的两层结构
+
+| 层 | 组织方式 | 回答什么 | 更新方式 |
+|---|---|---|---|
+| **改动总览** | 按文件（一文件一节，多轮演进合并） | "这个文件现在改了什么？冲突策略？" | 已有该文件就更新该节，演进链追加 id |
+| **变更日志** | 按次（时间倒序 append-only） | "何时/为何/怎么验证" | 顶部追加，永不改写历史 |
+
+总览与代码 `[CUSTOM-BEGIN]` 标记一一对应（同一文件的"当前状态"镜像），`sh CUSTOMIZATIONS/scripts/check-registry.sh` 做双向一致性自检——**每次登记后必须跑到全绿**。
 
 ## 必须遵守的铁律
 
-1. **开发前先读 `registry.md`**：了解已有自定义改动，避免重复或破坏已有修改。
-2. **改动后必须登记**：完成任何自定义功能/修改后，调用 `chatbox-record-change` skill 更新 `registry.md`。
-3. **不删除历史条目**：即使改动被回滚，条目标记为 `deprecated` 而不是删除。
+1. **开发前先读 `registry.md` 的改动总览**（不必通读变更日志）：了解相关文件已有什么改动、合并时怎么处理。
+2. **改动后必须登记**：调用 `chatbox-record-change` skill（总览按文件合并更新 + 日志按次追加 + check-registry 全绿）。
+3. **变更日志只增不改**；总览条目整体废弃时标 `deprecated` 而非删除。
 4. **禁止手动 git merge/rebase**：跨上游合并必须走 `chatbox-merge-upstream` skill；禁止 rebase 改写 custom/main 历史。
+5. **写代码前先读 `architecture.md`**：按 §0.5 任务路由只读相关文件，省上下文；改了代码结构后同步该文件。
+6. **排查问题前先扫 `docs/pitfalls.md`**：新踩的坑解决后回写一条（现象→根因→解法→教训）。
 
 ## change-id 与代码标记
 
@@ -59,14 +73,7 @@ CUSTOMIZATIONS/
 
 ## 条目类型与状态字典
 
-registry.md 改动清单的类型（type）字段：
-
-- `new-file`：新增的自定义文件（放在 CUSTOMIZATIONS/src/ 下）
-- `modified-upstream`：修改了上游已有文件
-- `config`：配置文件修改（package.json、electron-builder.yml 等）
-- `asset`：资源文件（图标、图片等）
-- `dependency`：新增/修改依赖包
-- `script`：构建脚本/工具脚本
+改动总览以文件为单位，不再使用独立的 type 字段；纯自定义路径（`CUSTOMIZATIONS/`、`.agents/`、`AGENTS.md` 等）按 keep-ours 处理，上游文件按标记逐块合并。历史变更日志中的 type 字段（new-file / modified-upstream / config / asset / dependency / script）作为历史数据保留，含义不变。
 
 状态（status）字段：
 

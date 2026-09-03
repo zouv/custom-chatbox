@@ -12,6 +12,12 @@
 2. **CUSTOMIZATIONS/registry.md**——自定义改动登记账本
 3. **README.md**——项目说明
 
+## 工作流（写代码 / 排查问题前）
+
+1. **先读 `CUSTOMIZATIONS/architecture.md`**：按 §0.5 任务作用域路由表确定该读哪些文件、忽略哪些；用 §2 任务→代码位置表按**函数名**定位（不依赖行号），只读作用域内的函数。图谱过期时以代码为准并顺手订正。
+2. **排查 bug 前先扫 `CUSTOMIZATIONS/docs/pitfalls.md` 标题**：历史坑点（IndexedDB 损坏、settings store 丢 action、bat 中文注释等）避免重复踩；解决新坑后回写一条。
+3. 命令式读设置**必须用 `getSettingsSnapshot()`**（`src/renderer/stores/settingsStore.ts`），严禁裸 `settingsStore.getState().getSettings()`（见 pitfalls #1）。
+
 ## 技术栈
 
 - Electron + React + TypeScript + Vite
@@ -82,13 +88,26 @@ src/main/        # Electron 主进程
 src/renderer/    # React 渲染进程（UI）
 src/preload/     # Electron preload
 src/shared/      # 共享工具
-CUSTOMIZATIONS/  # 自定义开发内容（规则、账本、代码、脚本）
+packages/chatbox-core/   # 领域逻辑（SessionService/NamingService 等）
+packages/chatbox-react/  # React 绑定（createChatApplication/settings store）
+CUSTOMIZATIONS/  # 自定义开发内容（规则、账本、代码地图、坑点库、代码、脚本）
 ├── README.md    # 机制与规则唯一完整版
+├── architecture.md  # 代码链路图谱（AI 加速索引）
 ├── registry.md  # 改动登记账本
+├── docs/pitfalls.md  # 历史坑点沉淀
 ├── release-notes/
 ├── src/ patches/ scripts/
 .agents/skills/  # AI Agent 项目级 skills
 ```
+
+## 文档更新职责（改完代码必须同步）
+
+| 改动类型 | 更新哪里 |
+|---------|---------|
+| 任何自定义功能/修改 | `CUSTOMIZATIONS/registry.md`（record-change skill） |
+| 新增/移动函数、改数据流或接口 | `CUSTOMIZATIONS/architecture.md`（§1 职责表 / §2 反查表 / §3 链路） |
+| 解决了一个反复折腾才定位的问题 | `CUSTOMIZATIONS/docs/pitfalls.md`（现象→根因→解法→教训） |
+| 机制/规则变更 | `CUSTOMIZATIONS/README.md` |
 
 ## 代码风格
 
