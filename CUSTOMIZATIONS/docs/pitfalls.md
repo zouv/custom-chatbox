@@ -83,3 +83,18 @@
   1. schema（settings-schema.ts）与 defaults（settings-defaults.ts）**必须同时加**，缺 defaults 会导致 `pnpm run dev` 首启 parse 报缺字段（catch 兜底后行为不一致）；
   2. 开关 UI 文案用 `t('key')`，**14 个语言文件都要加键**（`src/renderer/i18n/locales/*/translation.json`，键放 "Auto-Generate Chat Titles" 旁边）；缺键时界面直接显示英文原文；
   3. 全局设置放 `SettingsSchema` 层（不要进 `GlobalSessionSettingsSchema`，否则会随会话下发并与会话设置合并）。
+
+## 9. 杀软实时扫描锁住刚写出的 exe → rcedit「Unable to commit changes」
+
+- **日期**：2026-09-03（CUSTOM-20260903-009，unpacked/setup 打包失败）
+- **现象**：`manager.sh unpacked` 打包到 rcedit 步骤报 `⨯ cannot execute cause=exit status 1, errorOut=Fatal error: Unable to commit changes`，electron-builder 内部 3 次快速重试全部失败中止。日志里紧邻的步骤是 `updating asar integrity executable resource` 与 `[copy-ripgrep]/[patch-libsql]/[runtime-deps]`，容易误判为这些 patch 出错。
+- **根因**：electron-builder 每次打包都从 `node_modules/electron/dist/electron.exe` 复制一份新的 200MB `win-unpacked\Chatbox.exe`，随后**立即**用 rcedit 写版本信息/图标。本机火绒安全（HipsDaemon/usysdiag/wsctrl 等）对刚落盘的 exe 做实时扫描并短暂持有句柄，rcedit 打开写入被拒 → "Unable to commit changes"。electron-builder 自带的重试间隔极短（毫秒级），全部落在扫描窗口内。
+- **复现与定位**（node 脚本模拟同款时序）：copyFileSync 完成 → 零延迟 spawn rcedit → 稳定复现同样报错；隔 ~3-5 秒再跑则成功。锁窗口实测 0.6s~5s 不等（取决于杀软当时是否触发扫描）。手动单独跑 rcedit 永远成功（此时锁早释放），**不能用"手动能过"排除此因**。
+- **解法**：
+  1. `build-unpacked.bat` / `build-setup.bat` 的 electron-builder 调用外包一层重试：失败后等 15s 再跑整个 builder（最多 3 轮），扫描窗口是瞬时的，退避重试必过（标记 CUSTOM-20260903-009）；
+  2. 一劳永逸：把仓库目录（至少 `release\build\` 与 `node_modules\electron\dist\`）加入火绒信任区。
+- **教训**：
+  - "文件无法写入"类打包错误先想文件锁，再想权限；新写出的 exe 是杀软最感兴趣的目标；
+  - 排查手法：手动复现同一条失败命令 + 模拟原始时序（刚写出文件立刻操作），两者结果不同就指向"时间窗"而非"命令本身"；
+  - taskkill 杀 Chatbox.exe 只防"成品被占用"，防不了"新 exe 落盘被扫描"——两回事。
+- **验证**：加退避重试后 `--skip-build` 重跑 `[SUCCESS] unpacked build finished`；rcedit `--get-version-string` 确认 FileDescription/ProductName 已写入；启动 win-unpacked 主窗口正常。

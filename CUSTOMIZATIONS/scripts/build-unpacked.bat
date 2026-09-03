@@ -75,10 +75,22 @@ if not "%SKIP_BUILD%"=="1" (
 
 echo.
 echo [2/2] electron-builder --dir ...
-rem UPDATE_CHANNEL: electron-builder.yml publish.channel uses ${env.UPDATE_CHANNEL};
+rem UPDATE_CHANNEL: electron-builder.yml publish.channel uses ${env:UPDATE_CHANNEL};
 rem pin it to alpha so --publish never does not abort on the missing env var.
+rem Retry loop (CUSTOM-20260903-009): antivirus (e.g. Huorong) scans the freshly
+rem written Chatbox.exe and briefly locks it; rcedit then fails with
+rem "Unable to commit changes". electron-builder's 3 quick retries fall inside
+rem the scan window, so retry the whole builder run with a backoff instead.
+set "EB_TRIES=0"
+:PackageRun
 call npx cross-env UPDATE_CHANNEL=alpha electron-builder build --publish never --dir --win %EXTRA_ARGS%
-if errorlevel 1 goto :PackageFailed
+if not errorlevel 1 goto :PackageDone
+set /a EB_TRIES+=1
+if %EB_TRIES% GEQ 3 goto :PackageFailed
+echo [WARN] electron-builder failed ^(try %EB_TRIES%/3^). Antivirus may be scanning the output; waiting 15s before retry...
+timeout /t 15 /nobreak >nul
+goto :PackageRun
+:PackageDone
 
 echo.
 echo ============================================================
