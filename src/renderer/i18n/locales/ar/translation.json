@@ -115,6 +115,8 @@
   "Auto Compaction": "الضغط التلقائي",
   "Auto-collapse code blocks": "طي كتل الأكواد تلقائياً",
   "Auto-Generate Chat Titles": "إنشاء عناوين المحادثة تلقائياً",
+  "Auto-Name New Topics of Copilot Chats": "التسمية التلقائية للمواضيع الجديدة لمحادثات Copilot",
+  "When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.": "عند التشغيل، تتم تسمية المواضيع الجديدة لمحادثات Copilot تلقائياً بواسطة نموذج التسمية الافتراضي للمواضيع بدلاً من اسم الـCopilot.",
   "Auto-preview artifacts": "معاينة الأدوات البرمجية تلقائياً",
   "Automatic updates": "التحديثات التلقائية",
   "Automatically render generated artifacts (e.g., HTML with CSS, JS, Tailwind)": "عرض الأدوات البرمجية المنشأة تلقائياً (مثل HTML مع CSS و JS و Tailwind)",

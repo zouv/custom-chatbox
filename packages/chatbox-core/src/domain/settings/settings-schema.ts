@@ -286,9 +286,10 @@ export const shortcutToggleWindowValues = [
   '',
   'Alt+`',
   'Alt+Space',
-  // [CUSTOM-BEGIN] CUSTOM-20260902-001 - add Alt+Shift+Space preset for quickToggle window shortcut
+  // [CUSTOM-BEGIN] CUSTOM-20260903-002 - add Alt+Shift+Space and Super+Shift+Space presets for quickToggle window shortcut
   'Alt+Shift+Space',
-  // [CUSTOM-END] CUSTOM-20260902-001
+  'Super+Shift+Space',
+  // [CUSTOM-END] CUSTOM-20260903-002
   'Ctrl+Alt+Space',
   'Ctrl+Space',
 ]
@@ -570,6 +571,10 @@ export const SettingsSchema = GlobalSessionSettingsSchema.extend({
   pasteLongTextAsAFile: z.boolean().default(true), // 是否将长文本粘贴为文件
 
   autoGenerateTitle: z.boolean().default(true),
+
+  // [CUSTOM-BEGIN] CUSTOM-20260903-002 - auto-name copilot chats' new threads with the thread naming model
+  autoNameCopilotThreads: z.boolean().default(false),
+  // [CUSTOM-END] CUSTOM-20260903-002
 
   autoCompaction: z.boolean().default(true),
   compactionThreshold: z.number().min(0.4).max(0.9).default(0.6),

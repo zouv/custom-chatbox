@@ -115,6 +115,8 @@
   "Auto Compaction": "Automatisk komprimering",
   "Auto-collapse code blocks": "Skjul kodeblokker automatisk",
   "Auto-Generate Chat Titles": "Generer chattitler automatisk",
+  "Auto-Name New Topics of Copilot Chats": "Gi nye emner i Copilot-chatter automatisk navn",
+  "When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.": "Når denne er på, gis nye emner i Copilot-chatter automatisk navn av standardmodellen for emne-navngivning, i stedet for Copilot-navnet.",
   "Auto-preview artifacts": "Forhåndsvis artefakter automatisk",
   "Automatic updates": "Automatiske oppdateringer",
   "Automatically render generated artifacts (e.g., HTML with CSS, JS, Tailwind)": "Gjengi genererte artefakter automatisk (f.eks. HTML med CSS, JS, Tailwind)",

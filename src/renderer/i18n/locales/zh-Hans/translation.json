@@ -115,6 +115,8 @@
   "Auto Compaction": "自动压缩",
   "Auto-collapse code blocks": "自动收起代码块",
   "Auto-Generate Chat Titles": "自动生成聊天标题",
+  "Auto-Name New Topics of Copilot Chats": "使用搭档的新话题开启自动命名",
+  "When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.": "开启后，搭档对话的新话题将使用默认话题命名模型自动命名，而不是以搭档名称命名。",
   "Auto-preview artifacts": "自动预览生成物(Artifacts)",
   "Automatic updates": "自动更新",
   "Automatically render generated artifacts (e.g., HTML with CSS, JS, Tailwind)": "自动渲染生成物（例如，带有 CSS、JS、Tailwind 的 HTML）",

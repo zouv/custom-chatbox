@@ -50,6 +50,9 @@ export function createDefaultSettings(): Settings {
     autoCollapseCodeBlock: true,
     pasteLongTextAsAFile: true,
     autoGenerateTitle: true,
+    // [CUSTOM-BEGIN] CUSTOM-20260903-002 - auto-name copilot chats' new threads with the thread naming model
+    autoNameCopilotThreads: false,
+    // [CUSTOM-END] CUSTOM-20260903-002
     autoCompaction: true,
     compactionThreshold: 0.6,
     pauseOnToolCallLimit: true,

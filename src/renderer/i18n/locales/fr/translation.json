@@ -115,6 +115,8 @@
   "Auto Compaction": "Compactage automatique",
   "Auto-collapse code blocks": "Réduire automatiquement les blocs de code",
   "Auto-Generate Chat Titles": "Générer automatiquement les titres de discussion",
+  "Auto-Name New Topics of Copilot Chats": "Nommer automatiquement les nouveaux sujets des conversations Copilot",
+  "When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.": "Si activé, les nouveaux sujets des conversations Copilot sont nommés automatiquement par le modèle par défaut de nommage des sujets, au lieu du nom du Copilot.",
   "Auto-preview artifacts": "Prévisualiser automatiquement les artefacts",
   "Automatic updates": "Mises à jour automatiques",
   "Automatically render generated artifacts (e.g., HTML with CSS, JS, Tailwind)": "Rendre automatiquement les artefacts générés (ex: HTML avec CSS, JS, Tailwind)",

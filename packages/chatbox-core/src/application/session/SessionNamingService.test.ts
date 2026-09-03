@@ -4,8 +4,8 @@ import type { ModelInterface } from '../../models/types'
 import { buildNameGenerationAttemptKey, getCurrentThreadNamingIdentity } from '../../session/auto-title'
 import type { Message, Session, Settings, Updater } from '../../types'
 import { type ScheduledNameGeneration, SessionNamingService } from './SessionNamingService'
-import type { SessionMetadataUpdate } from './session-metadata'
 import { SessionNotFoundError } from './SessionWriteCoordinator'
+import type { SessionMetadataUpdate } from './session-metadata'
 
 function createSession(overrides: Partial<Session> = {}): Session {
   return {
@@ -295,6 +295,28 @@ describe('SessionNamingService', () => {
     disabled.service.syncAutoTitle(disabled.session!)
     expect(disabled.scheduled).toHaveLength(0)
   })
+
+  // [CUSTOM-BEGIN] CUSTOM-20260903-002 - copilot thread naming gate behind autoNameCopilotThreads
+  test('syncAutoTitle skips copilot thread naming unless autoNameCopilotThreads is enabled', () => {
+    const copilotSession = createSession({ name: 'Travel planner', threadName: '', copilotId: 'copilot-1' })
+
+    const offByDefault = createHarness()
+    offByDefault.setSession(copilotSession)
+    offByDefault.service.syncAutoTitle(offByDefault.session!)
+    expect(offByDefault.scheduled).toHaveLength(0)
+
+    const enabled = createHarness()
+    enabled.settings.autoNameCopilotThreads = true
+    enabled.setSession(createSession({ name: 'Travel planner', threadName: '', copilotId: 'copilot-1' }))
+    enabled.service.syncAutoTitle(enabled.session!)
+    expect(enabled.scheduled).toHaveLength(1)
+
+    const untitledCopilot = createHarness()
+    untitledCopilot.setSession(createSession({ name: 'Untitled', threadName: '', copilotId: 'copilot-1' }))
+    untitledCopilot.service.syncAutoTitle(untitledCopilot.session!)
+    expect(untitledCopilot.scheduled).toHaveLength(1)
+  })
+  // [CUSTOM-END] CUSTOM-20260903-002
 
   test('cancels pending work and clears retry state when a Session is deleted', () => {
     const harness = createHarness()

@@ -115,6 +115,8 @@
   "Auto Compaction": "自動圧縮",
   "Auto-collapse code blocks": "コードブロックを自動的に折りたたむ",
   "Auto-Generate Chat Titles": "チャットタイトルの自動生成",
+  "Auto-Name New Topics of Copilot Chats": "Copilotチャットの新規トピックを自動命名",
+  "When on, new topics of Copilot chats are named by the Default Thread Naming Model instead of the Copilot name.": "オンにすると、Copilotチャットの新しいトピックはCopilot名ではなく、デフォルトのトピック命名モデルによって自動的に命名されます。",
   "Auto-preview artifacts": "アーティファクトの自動プレビュー",
   "Automatic updates": "自動アップデート",
   "Automatically render generated artifacts (e.g., HTML with CSS, JS, Tailwind)": "生成されたアーティファクトを自動的にレンダリングする（例：CSS、JS、Tailwindを含むHTML）",

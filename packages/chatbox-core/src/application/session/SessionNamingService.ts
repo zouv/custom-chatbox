@@ -15,8 +15,8 @@ import {
 } from '../../session/auto-title'
 import { hasContentForAutoTitle } from '../../session/message-success'
 import type { Language, Message, ModelProvider, Session, SessionSettings, Settings } from '../../types'
-import type { SessionUseCasePort } from './session-use-case-port'
 import { SessionNotFoundError } from './SessionWriteCoordinator'
+import type { SessionUseCasePort } from './session-use-case-port'
 
 export interface ScheduledNameGeneration {
   cancel(): void
@@ -129,6 +129,17 @@ export class SessionNamingService {
     }
     if (this.dependencies.settings.getSettings().autoGenerateTitle === false) return
     const action = resolveAutoTitleAction(session)
+    // [CUSTOM-BEGIN] CUSTOM-20260903-002 - copilot chats keep the copilot's name as the thread
+    // title unless autoNameCopilotThreads is explicitly enabled; only the
+    // thread-title naming path is suppressed, the Untitled session path is not.
+    if (
+      action === 'thread' &&
+      session.copilotId !== undefined &&
+      this.dependencies.settings.getSettings().autoNameCopilotThreads !== true
+    ) {
+      return
+    }
+    // [CUSTOM-END] CUSTOM-20260903-002
     const nextOptions = { ...options, threadIdentity: getCurrentThreadNamingIdentity(session) }
     if (action === 'session-and-thread') {
       this.scheduleNameAndThreadName(session.id, nextOptions)
