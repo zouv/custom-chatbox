@@ -51,6 +51,7 @@ pnpm run test       # Vitest 测试
 
 - **remote**：`origin` → 自定义 GitHub 仓库；`upstream` → https://github.com/chatboxai/chatbox.git
 - **禁止操作**：
+  - **禁止未经用户明确指示 commit / push**：完成改动后只汇报结果（改了什么、验证情况），由用户决定何时提交；用户明确说"提交"/"commit"/"push"时才执行
   - 禁止手动 `git merge` 合并 vendor 到 custom/main（必须通过 `chatbox-merge-upstream` skill）
   - 禁止 `git rebase` 改写 custom/main 的历史
   - 禁止直接 push 到 vendor 分支

@@ -267,6 +267,7 @@ Release URL：https://github.com/<owner>/<repo>/releases/tag/<custom-version>
      git push origin :refs/tags/<version>
      ```
    - 如果 release 已发布但发现严重问题：标记为 deprecated 并发新版本，不要删除已有 release
+8. **发布由用户明确发起**：本 skill 的 commit/tag/push 属于发布流程的固有步骤，用户要求发布时按步骤执行；流程中止（检查失败、产物异常）时停在未提交状态先报告
 
 ## 构建产物目录参考
 
