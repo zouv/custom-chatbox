@@ -76,13 +76,24 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | src/shared/defaults.test.ts | （测试文件，无标记） | 008 | shortcuts 键断言补 openThreadHistory（= 'mod+h'） | keep-ours | active |
 | electron-builder.yml | 20260902-002 | 20260902-002 | 移除上游残留 win.signtoolOptions（无签名构建） | merge-manual | active |
 | .gitignore | 20260903-001 | 20260903-001 | 忽略 .zcode/plans/（ZCode 会话本地计划文档） | keep-ours | active |
-| CUSTOMIZATIONS/scripts/（manager.sh、build-unpacked.bat、build-setup.bat、7za-shim.*、init-repo.ps1、list-custom.ps1、check-registry.sh） | （纯自定义目录，逐文件标记非必需） | 20260902-003→003→007 | 本地操作与打包脚本套件：manager.sh 统一入口；两个 bat 打 unpacked/Setup 包；7za shim 修 winCodeSign 解压；check-registry 一致性自检 | keep-ours | active |
+| CUSTOMIZATIONS/scripts/（manager.sh、build-unpacked.bat、build-setup.bat、7za-shim.*、init-repo.ps1、list-custom.ps1、check-registry.sh） | （纯自定义目录，逐文件标记非必需） | 20260902-003→003→007→009 | 本地操作与打包脚本套件：manager.sh 统一入口；两个 bat 打 unpacked/Setup 包（electron-builder 失败后 15s 退避重试×3，防杀软扫描新 exe 锁文件致 rcedit 失败）；7za shim 修 winCodeSign 解压；check-registry 一致性自检 | keep-ours | active |
 | CUSTOMIZATIONS/（README.md、architecture.md、registry.md、docs/pitfalls.md） | （纯自定义目录） | 20260902-005→006→007 | 自定义机制（规则/账本）+ AI 协作文档（代码地图/坑点库） | keep-ours | active |
 | AGENTS.md、.agents/skills/* | （纯自定义文件） | 20260902-004→005→006 | 会话级硬约束+工作流+skills（merge-upstream/record-change/release） | keep-ours | active |
 
 ---
 
 ## 变更日志
+
+### 2026-09-03 - CUSTOM-20260903-009
+- **功能**：修复 unpacked/Setup 打包间歇性失败（rcedit「Unable to commit changes」）
+- **改动文件**：CUSTOMIZATIONS/scripts/build-unpacked.bat、CUSTOMIZATIONS/scripts/build-setup.bat、CUSTOMIZATIONS/docs/pitfalls.md（新增坑点 #9）
+- **详细说明**：
+  - 现象：`manager.sh unpacked` 在 rcedit 给新写出的 win-unpacked\Chatbox.exe 写版本信息时报 `Fatal error: Unable to commit changes`，electron-builder 内部 3 次快速重试全败中止；`--skip-build` 重跑仍失败（builder 每次都重新复制新 exe）
+  - 根因（node 脚本模拟时序复现）：electron-builder 复制完 200MB 新 exe 立即调 rcedit；火绒实时防护扫描刚落盘的 exe 并短暂持锁（实测窗口 0.6s~5s 不等），rcedit 写入被拒。electron-builder 自带重试间隔毫秒级，全落在扫描窗口内。手动跑 rcedit 永远成功（锁已释放），不能以此排除。9/2 两次打包成功、9/3 失败符合杀软启发式判定的波动性
+  - 修复：两个 bat 的 electron-builder 调用外包重试循环——失败后等 15s 重跑整个 builder（最多 3 轮），15s 远超扫描窗口，必过；代码注释标记 CUSTOM-20260903-009。根治方案（用户手动）：仓库目录加入火绒信任区
+  - 排查中排除的假设：Chatbox 进程占用（脚本已 taskkill 且无进程）、磁盘空间（59G 可用）、只读属性（A）、父进程拦截（node spawn 同款命令成功）、electron-builder 特殊执行方式（builder 经 app-builder.exe 执行，node 模拟同参数亦成功——差异只在时序）
+- **验证方式**：改后 `build-unpacked.bat --skip-build` 重跑 `[SUCCESS] unpacked build finished`（本轮一遍过）；rcedit `--get-version-string` 确认 FileDescription/ProductName 已写入产物；启动 win-unpacked 主窗口正常响应；临时复现脚本已清理
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-03 - CUSTOM-20260903-008
 - **功能**：新增 Ctrl/Cmd+H 快捷键直接打开会话「历史话题」抽屉（此前只能经右上角 … 菜单进入）
