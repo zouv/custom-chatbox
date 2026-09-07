@@ -98,3 +98,13 @@
   - 排查手法：手动复现同一条失败命令 + 模拟原始时序（刚写出文件立刻操作），两者结果不同就指向"时间窗"而非"命令本身"；
   - taskkill 杀 Chatbox.exe 只防"成品被占用"，防不了"新 exe 落盘被扫描"——两回事。
 - **验证**：加退避重试后 `--skip-build` 重跑 `[SUCCESS] unpacked build finished`；rcedit `--get-version-string` 确认 FileDescription/ProductName 已写入；启动 win-unpacked 主窗口正常。
+
+## 10. 仓库目录改名/移动 → pnpm workspace 软链指向旧路径，构建/打包报「resolve import @chatbox/core」失败
+
+- **日期**：2026-09-07
+- **现象**：`build-unpacked.bat` 在 `[1/2] pnpm run build` 的 build:main 阶段报
+  `Rollup failed to resolve import "@chatbox/core/domain/settings" from "src/shared/defaults.ts"`，脚本 exit 1。`--skip-build` 直接跑 electron-builder 阶段却正常——说明问题在 build 不在打包。同时 tsc 报大量 `Module has no exported member 'Settings'/'SessionSettings'`，vitest 报 `Cannot find package '@chatbox/core/domain/settings'`，三者同一根因。
+- **根因**：仓库从旧路径 `costom-chat-box` 改名/移动到 `custom-chatbox` 后，`node_modules/@chatbox/core` 与 `node_modules/@chatbox/react` 两个 workspace 软链仍指向旧路径 `/d/Git/zgithub/costom-chat-box/packages/...`（已不存在），`@chatbox/core` 整体解析不到，连锁拉崩依赖它的 `src/shared/defaults.ts` 与 tsc 类型解析。
+- **解法**：`CI=true pnpm install` 重建 workspace 链接（指向当前路径）。注意两点：1) 直接 `ln -s` 不可靠——Windows 无符号链接权限（`$MSYS` 为空）时 MSYS 会把 `ln -s` 退化成**目录复制**，反而更糟，应交给 pnpm；2) pnpm 检测到 node_modules 状态异常会提示 `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`，非交互环境加 `CI=true` 放行。`pnpm install` 过程中 `release/app` 项目的 postinstall（electron-rebuild 报 `Unable to find electron's version number`）会失败——这是无关报错，electron-builder 打包时 `ensure-app-deps.cjs` 会自行 `npm ci` 重建 release/app，不影响构建/打包。
+- **验证**：`pnpm run build` exit 0；`build-unpacked.bat`（不带 --skip-build）端到端 `[SUCCESS] unpacked build finished`。
+- **教训**：`@chatbox/core` 等 workspace 包解析失败时，先 `ls -la node_modules/@chatbox/` 看软链指向的**绝对路径是否仍是当前目录**——仓库 move/rename/clone 到新路径后这是高发点。
