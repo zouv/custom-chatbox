@@ -292,6 +292,9 @@ export const shortcutToggleWindowValues = [
   // [CUSTOM-END] CUSTOM-20260903-002
   'Ctrl+Alt+Space',
   'Ctrl+Space',
+  // [CUSTOM-BEGIN] CUSTOM-20260907-001 - add Shift+Alt+C preset for quickToggle window shortcut
+  'Shift+Alt+C',
+  // [CUSTOM-END] CUSTOM-20260907-001
 ]
 const ShortcutToggleWindowValueSchema = z.enum(shortcutToggleWindowValues as [string, ...string[]])
 
