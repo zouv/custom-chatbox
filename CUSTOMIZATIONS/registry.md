@@ -45,7 +45,7 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 
 | 文件 | 标记（当前） | 演进链 | 当前效果（合并后） | 冲突策略 | 状态 |
 |------|-------------|--------|-------------------|---------|------|
-| packages/chatbox-core/src/domain/settings/settings-schema.ts | 002/008 | 20260902-001→002→008 | quickToggle 预设新增 Alt+Shift+Space 与 Super+Shift+Space；ShortcutSettingSchema 新增 openThreadHistory（z.string().default('mod+h')）；SettingsSchema 新增 autoNameCopilotThreads（boolean，default false） | merge-manual | active |
+| packages/chatbox-core/src/domain/settings/settings-schema.ts | 002/008/20260907-001 | 20260902-001→002→008→20260907-001 | quickToggle 预设新增 Alt+Shift+Space、Super+Shift+Space 与 Shift+Alt+C；ShortcutSettingSchema 新增 openThreadHistory（z.string().default('mod+h')）；SettingsSchema 新增 autoNameCopilotThreads（boolean，default false） | merge-manual | active |
 | packages/chatbox-core/src/domain/settings/settings-defaults.ts | 002/008 | 002→008 | createDefaultSettings 含 autoNameCopilotThreads: false 与 shortcuts.openThreadHistory: 'mod+h'（与 schema 必须同步） | merge-manual | active |
 | packages/chatbox-core/src/application/session/SessionNamingService.ts | 006 | 20260903-002→004→006 | syncAutoTitle 内搭档命名门槛：开关关闭时 copilot 会话跳过 thread 命名；开启时仅"无归档话题的会话首轮"升级 name-and-thread（写 name+threadName），话题轮次保持上游 thread-only；scheduleCopilotAwareNameAndThreadName 放宽 Untitled 写保护 | merge-manual | active |
 | packages/chatbox-core/src/application/session/SessionNamingService.test.ts | （测试文件，无标记） | 002→004→006 | 命名门槛/升级/新话题排除共 5 个自定义用例 | keep-ours | active |
@@ -83,6 +83,13 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 ---
 
 ## 变更日志
+
+### 2026-09-07 - CUSTOM-20260907-001
+- **功能**：键盘快捷键「显示/隐藏应用窗口」新增 Shift+Alt+C 预设组合
+- **改动文件**：packages/chatbox-core/src/domain/settings/settings-schema.ts
+- **详细说明**：在 `shortcutToggleWindowValues` 数组中新增 `'Shift+Alt+C'`（追加在 'Ctrl+Space' 之后）。该数组同时作为渲染层设置页下拉框（src/renderer/components/Shortcut.tsx）的选项来源和 zod 校验枚举（`ShortcutToggleWindowValueSchema`）；主进程注册（src/main/main.ts 的 normalizeShortcut）对 Shift/Alt/C 无需转换，`isValidShortcut` 的修饰键列表已含 shift/alt 且 `c` 为有效非修饰键，Electron accelerator 原生支持该组合。改动区域已用 [CUSTOM-BEGIN]/[CUSTOM-END] 标记包裹。
+- **验证方式**：`sh CUSTOMIZATIONS/scripts/check-registry.sh` 全绿；`pnpm run dev` 后 设置 → 键盘快捷键 → 显示/隐藏应用窗口 下拉框可选 Shift+Alt+C，按该组合键验证窗口显示/隐藏
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-03 - CUSTOM-20260903-009
 - **功能**：修复 unpacked/Setup 打包间歇性失败（rcedit「Unable to commit changes」）
