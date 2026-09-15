@@ -76,13 +76,36 @@ upstream_remote: "https://github.com/chatboxai/chatbox.git"
 | src/shared/defaults.test.ts | （测试文件，无标记） | 008 | shortcuts 键断言补 openThreadHistory（= 'mod+h'） | keep-ours | active |
 | electron-builder.yml | 20260902-002 | 20260902-002 | 移除上游残留 win.signtoolOptions（无签名构建） | merge-manual | active |
 | .gitignore | 20260903-001 | 20260903-001 | 忽略 .zcode/plans/（ZCode 会话本地计划文档） | keep-ours | active |
-| CUSTOMIZATIONS/scripts/（manager.sh、build-unpacked.bat、build-setup.bat、7za-shim.*、init-repo.ps1、list-custom.ps1、check-registry.sh） | （纯自定义目录，逐文件标记非必需） | 20260902-003→003→007→009 | 本地操作与打包脚本套件：manager.sh 统一入口；两个 bat 打 unpacked/Setup 包（electron-builder 失败后 15s 退避重试×3，防杀软扫描新 exe 锁文件致 rcedit 失败）；7za shim 修 winCodeSign 解压；check-registry 一致性自检 | keep-ours | active |
-| CUSTOMIZATIONS/（README.md、architecture.md、registry.md、docs/pitfalls.md） | （纯自定义目录） | 20260902-005→006→007 | 自定义机制（规则/账本）+ AI 协作文档（代码地图/坑点库） | keep-ours | active |
-| AGENTS.md、.agents/skills/* | （纯自定义文件） | 20260902-004→005→006 | 会话级硬约束+工作流+skills（merge-upstream/record-change/release） | keep-ours | active |
+| CUSTOMIZATIONS/scripts/（manager.sh、build-unpacked.bat、build-setup.bat、publish-release.mjs、7za-shim.*、init-repo.ps1、list-custom.ps1、check-registry.sh） | （纯自定义目录，逐文件标记非必需） | 20260902-003→003→007→009→20260915-001→002 | 本地操作与打包脚本套件：manager.sh 统一入口；两个 bat 打 unpacked/Setup 包（electron-builder 失败后 15s 退避重试×3，防杀软扫描新 exe 锁文件致 rcedit 失败）；publish-release.mjs 为 gh 不可用时的发布回退（GCM token + GitHub REST API，幂等、流式上传、字节数校验）；7za shim 修 winCodeSign 解压；check-registry 一致性自检 | keep-ours | active |
+| CUSTOMIZATIONS/（README.md、architecture.md、registry.md、docs/pitfalls.md） | （纯自定义目录） | 20260902-005→006→007→20260915-001→002 | 自定义机制（规则/账本）+ AI 协作文档（代码地图/坑点库） | keep-ours | active |
+| AGENTS.md、.agents/skills/* | （纯自定义文件） | 20260902-004→005→006→20260915-001→002 | 会话级硬约束+工作流+skills（merge-upstream/record-change/release 打包；publish 发布，gh 优先 + GCM token 回退，含仓库解析陷阱） | keep-ours | active |
 
 ---
 
 ## 变更日志
+
+### 2026-09-15 - CUSTOM-20260915-002
+- **功能**：发布链路改用 gh CLI（gh 安装确认 + 修正"默认认上游仓库"的危险默认 + 两个 skill 改 gh 优先）
+- **改动文件**：.agents/skills/chatbox-publish/SKILL.md、.agents/skills/chatbox-release/SKILL.md、CUSTOMIZATIONS/docs/pitfalls.md（新增坑点 #13）
+- **详细说明**：
+  - 背景：此前本机没有 gh CLI，CUSTOM-20260915-001 的发布流程按"GCM token + REST API"写成 `publish-release.mjs`
+  - gh 现已可用：2.100.0，`C:\Program Files\GitHub CLI\`，机器级 PATH 已含（**已开的终端需新开才认**）。`gh auth login` 时对 "Authenticate Git with your GitHub credentials?" 答 **No**，保持 git 的 credential helper 仍为 GCM（`manager`），gh 用自己的 keyring，两者互不干扰
+  - ⚠️ 修掉一个危险默认：本仓库有 `origin`（自己的 fork）+ `upstream`（chatboxai/chatbox）两个 remote，**gh 检测到 fork 关系后会优先选用上游作为 base 仓库**——`gh release view` 报 `release not found`（跑去上游找），`gh release create` 不加 `-R` 会试图往上游发 release。修法 `gh repo set-default zouv/custom-chatbox`（写入 `.git/config` 的 `remote.origin.gh-resolved=base`，仅本地、不随仓库提交，**新克隆需重跑**）
+  - skill 改为 **gh 优先**：发布步骤给 `gh release create ... --verify-tag`（tag 未推送即中止的防呆）；`publish-release.mjs` 保留为 gh 不可用时的回退；坑点 1 重写为 gh 相关（原"本机没有 gh"表述已过时），坑点重新编号（原 2~8 → 3~9），两处交叉引用同步更新
+- **验证方式**：`gh repo view --json nameWithOwner` 修正后输出 `zouv/custom-chatbox`（修正前为 `chatboxai/chatbox`）；`gh release view v1.23.0-custom.3` 正常列出 title/tag/author 与两个资产（修正前报 not found）；`git config --get credential.helper` 仍为 `manager`（未被 gh 接管）
+- **基于上游版本**：v1.23.0 (61191ae7)
+
+### 2026-09-15 - CUSTOM-20260915-001
+- **功能**：新增 `chatbox-publish` skill（发布到 GitHub 的操作指南）+ `publish-release.mjs` 发布脚本；`chatbox-release` 收敛为纯打包
+- **改动文件**：.agents/skills/chatbox-publish/SKILL.md（新增）、CUSTOMIZATIONS/scripts/publish-release.mjs（新增）、.agents/skills/chatbox-release/SKILL.md、AGENTS.md、CUSTOMIZATIONS/README.md、CUSTOMIZATIONS/docs/pitfalls.md（新增坑点 #11/#12）
+- **详细说明**：
+  - 起因：发 v1.23.0-custom.3 时发现"发布到 GitHub"没有成文指南——原 chatbox-release 第六步写的是 `gh release create`，但本机没有 gh CLI，实际做法（GCM token + GitHub REST API）与版本号/release notes/tag/上传的真实顺序都没落地
+  - 拆分：chatbox-release 只管「源码 → 安装包」（版本号、lint/build、manager.sh 打包、产物 FileVersion 自检），第四步交接给 chatbox-publish；commit/tag/push 全部移出
+  - 新增 chatbox-publish：触发条件、前置检查、5 步执行流程、8 条坑点与经验（gh 缺失/GCM token、管道掩码退出码、长任务日志轮询、测试浮动基线判定、tag 祖先性、勿跑 pnpm install、manager.sh 打包、大文件上传）、失败回滚表、版本号规范
+  - 脚本化：本次临时写的上传脚本沉淀为 `CUSTOMIZATIONS/scripts/publish-release.mjs`——GCM 取 token（不落盘）、release 复用/创建、流式上传（`duplex:'half'`，不占内存）、同名资产先删后传（幂等可重跑）、远端/本地字节数校验、tag 祖先性告警、`--dry-run` 干跑
+  - 坑点沉淀：①管道掩码退出码——`pnpm run test 2>&1 | tail -60` 的退出码是 tail 的，测试失败也返回 0，本次因此误报"测试通过"；②tag 指向被 amend 掉的提交——v1.23.0-custom.2 的 tag 停在 `bc5584f6`，而分支上是 `0bdcb3bc`（差 4 个文档文件），tag 不在 custom/main 历史上
+- **验证方式**：`node CUSTOMIZATIONS/scripts/publish-release.mjs v1.23.0-custom.3 --dry-run` 仓库/notes/产物路径解析全对且 tag 祖先性检查通过；错误路径（无版本号 exit 2、notes 缺失 exit 1）符合预期；脚本的实际上传链路已由本次 v1.23.0-custom.3 发布全程跑通（release id 388807736，两个资产字节数与本地一致）
+- **基于上游版本**：v1.23.0 (61191ae7)
 
 ### 2026-09-07 - CUSTOM-20260907-001
 - **功能**：键盘快捷键「显示/隐藏应用窗口」新增 Shift+Alt+C 预设组合

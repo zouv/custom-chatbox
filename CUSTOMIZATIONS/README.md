@@ -14,7 +14,7 @@ CUSTOMIZATIONS/
 ├── release-notes/   # 各自定义版本的发布说明归档
 ├── src/             # 新增的自定义源码（独立模块，通过入口挂载）
 ├── patches/         # 对上游文件的补丁
-└── scripts/         # manager.sh / build-*.bat / check-registry.sh / init-repo / list-custom / sync-vendor 等
+└── scripts/         # manager.sh / build-*.bat / publish-release.mjs / check-registry.sh / init-repo / list-custom / sync-vendor 等
 ```
 
 核心约定：**一处规则（README.md）、一处账本（registry.md）、一份代码地图（architecture.md）、一份坑点库（docs/pitfalls.md）**。规则改动只改本文件；改动登记只写 registry.md；代码结构变化同步 architecture.md；踩坑沉淀进 docs/pitfalls.md；自定义代码优先放 src/。
@@ -89,8 +89,8 @@ CUSTOMIZATIONS/
 | `current_upstream_version` / `current_upstream_commit` | 上游合并后 | chatbox-merge-upstream |
 | `vendor_branch` | 上游合并后（跨版本线时） | chatbox-merge-upstream |
 | `last_merge_date` | 上游合并后 | chatbox-merge-upstream |
-| `last_release_version` / `last_release_date` | 发布后 | chatbox-release |
-| `custom_version` | 发布后 | chatbox-release |
+| `last_release_version` / `last_release_date` | 发布后 | chatbox-publish |
+| `custom_version` | 发布后 | chatbox-publish |
 | `upstream_remote` | 首次 clone 初始化 | init-repo.ps1 |
 
 ## 辅助脚本
@@ -104,4 +104,11 @@ pwsh ./CUSTOMIZATIONS/scripts/list-custom.ps1
 
 # 同步 vendor 分支到指定版本
 pwsh ./CUSTOMIZATIONS/scripts/sync-vendor.ps1 -Version v1.22.4 -Push
+
+# 本地打包（7za shim / 杀 Chatbox / 杀软退避重试 已内置）
+sh ./CUSTOMIZATIONS/scripts/manager.sh setup
+
+# 发布到 GitHub Release（GCM token + REST API，幂等可重跑；先 --dry-run 校验）
+node ./CUSTOMIZATIONS/scripts/publish-release.mjs v1.23.0-custom.N --dry-run
+node ./CUSTOMIZATIONS/scripts/publish-release.mjs v1.23.0-custom.N
 ```
