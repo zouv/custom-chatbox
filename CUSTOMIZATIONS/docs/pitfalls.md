@@ -108,3 +108,48 @@
 - **解法**：`CI=true pnpm install` 重建 workspace 链接（指向当前路径）。注意两点：1) 直接 `ln -s` 不可靠——Windows 无符号链接权限（`$MSYS` 为空）时 MSYS 会把 `ln -s` 退化成**目录复制**，反而更糟，应交给 pnpm；2) pnpm 检测到 node_modules 状态异常会提示 `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`，非交互环境加 `CI=true` 放行。`pnpm install` 过程中 `release/app` 项目的 postinstall（electron-rebuild 报 `Unable to find electron's version number`）会失败——这是无关报错，electron-builder 打包时 `ensure-app-deps.cjs` 会自行 `npm ci` 重建 release/app，不影响构建/打包。
 - **验证**：`pnpm run build` exit 0；`build-unpacked.bat`（不带 --skip-build）端到端 `[SUCCESS] unpacked build finished`。
 - **教训**：`@chatbox/core` 等 workspace 包解析失败时，先 `ls -la node_modules/@chatbox/` 看软链指向的**绝对路径是否仍是当前目录**——仓库 move/rename/clone 到新路径后这是高发点。
+
+## 11. 管道吃掉退出码 → 测试失败被误报为「通过」
+
+- **日期**：2026-09-15（发 v1.23.0-custom.3 时踩的）
+- **现象**：`pnpm run test 2>&1 | tail -60` 跑完，日志里有失败堆栈，但命令退出码是 **0**；据此向用户报告"测试通过（exit 0）"，实际那次有 31 个用例失败。差点带着"全绿"的结论去发布。
+- **根因**：管道的退出码取**最后一个命令**（`tail`）的退出码，前面 `pnpm run test` 的失败被吞掉；bash 默认不开 `pipefail`。跑打包/测试这类"必须要看退出码"的长命令时，为了看尾部输出而加 `| tail` 是最顺手的写法，也是最容易踩的。
+- **解法**：
+  1. 一律**重定向到文件**再读，退出码单独取：`pnpm run test > /tmp/t.log 2>&1; echo "EXIT=$?"`
+  2. 或者显式 `set -o pipefail`（仅 bash；Git Bash 下可用）
+  3. 长任务顺便开后台 + 日志文件 + 轮询关键行（`grep -E "^ FAIL|Test Files|Tests " /tmp/t.log`），既拿得到中途进度，也不丢退出码
+- **教训**：
+  - **"看输出的管道"和"看退出码"不能同时要**——加了管道，退出码就不再是原命令的了；
+  - 报告"测试/构建通过"之前，先确认自己拿到的究竟是哪个进程的退出码；
+  - 输出里明明有 `FAIL` 却报通过时，第一反应应该是查退出码来源，而不是相信自己刚写的管道。
+- **验证**：重跑改为重定向后 `EXIT=1`，与日志里的 `Tests 16 failed | 4102 passed` 一致。
+
+## 12. 打 tag 后 amend 提交 → 已发布的 tag 悬在游离提交上
+
+- **日期**：2026-09-15（发 v1.23.0-custom.3 时排查历史发现，问题产生于 custom.2 发布时）
+- **现象**：`git merge-base --is-ancestor v1.23.0-custom.2 HEAD` 返回非 0，`git branch -a --contains v1.23.0-custom.2` 输出为空——**已发布的 tag 不属于任何分支**。对比发现：tag 指向 `bc5584f6`，分支上是 `0bdcb3bc`，两者提交信息、父提交（`d6b04c12`）都相同，tree 差 4 个文档文件（AGENTS.md + 3 个 SKILL.md）。
+- **根因**：打 tag（并发布）之后，又 `git commit --amend`（或等效改写）了那个发布提交。原提交被新提交取代，tag 仍指向旧的那份。
+- **解法**：
+  1. **tag 创建后不要再改写被 tag 的提交**——要补文档就追加新提交，不要 amend；
+  2. 发布前用 `git merge-base --is-ancestor <tag> HEAD` 校验（`publish-release.mjs` 已内置该检查并告警）；
+  3. 已推送的 tag 要修正只能 `git tag -f` + `git push -f origin <tag>`，对外可见，需用户确认后再做。
+- **影响面**：本例中两版 `package.json` 版本号相同，安装包内容一致，**用户侧无影响**；但用 tag 做 diff / 生成 changelog / 回滚都会以错误的提交为基准（本次生成 release notes 时就差点用错基准）。
+- **教训**：tag 是"已发布事实"的锚点，不是随手能挪的标签。发布流程里 tag 应当是最后一步不可变的动作。
+- **验证**：`v1.23.0-custom.3` 发布后 `git merge-base --is-ancestor v1.23.0-custom.3 HEAD` 通过，tag 与远端一致（`git ls-remote --tags origin`）。
+
+## 13. fork 仓库里 gh 默认认「上游仓库」→ 不带 `-R` 的命令全打到上游
+
+- **日期**：2026-09-15（装好 gh 2.100.0 后首次使用）
+- **现象**：在仓库根目录（`origin` = 自己的 fork）跑 `gh release view v1.23.0-custom.3` 报 `release not found`——而该 release 明明存在（REST API 与浏览器都能看到）。`gh repo view --json nameWithOwner` 输出的是 **`chatboxai/chatbox`**，不是 `zouv/custom-chatbox`。
+- **根因**：本仓库有两个 remote（`origin`=自己的 fork、`upstream`=chatboxai/chatbox）。**gh 检测到 fork 关系后会优先选用上游作为 base 仓库**——这是 gh 为 PR 场景设计的默认（在 fork 里默认往上游提 PR）。于是所有不带 `-R/--repo` 的 gh 命令都解析到了上游。
+- **影响**：`gh release create` / `gh issue create` 这类**写操作会打到错误仓库**。本例中 token 没有 chatboxai/chatbox 的写权限，会以报错收场；但这属于必须防住的危险默认——若哪天 token 权限变化或换人操作，后果就不是报错了。
+- **解法**：
+  ```bash
+  gh repo set-default zouv/custom-chatbox      # 写入 .git/config 的 remote.origin.gh-resolved=base
+  gh repo view --json nameWithOwner            # 验证输出 zouv/custom-chatbox
+  ```
+  该设置**仅本地生效、不随仓库提交**，所以**新克隆的仓库需要重跑一次**。应急也可在单条命令后加 `-R zouv/custom-chatbox`。
+- **教训**：
+  - fork 仓库里用 gh，"当前仓库"是 **gh 自己算出来的**，不等于 git 当前目录对应的 origin；凡是写操作的 gh 命令，先用 `gh repo view --json nameWithOwner` 确认目标；
+  - 排查"东西明明在却找不到"类问题：先确认工具查的是不是同一个目标（本例中 API 看得到、gh 看不到，差异就在仓库解析）。
+- **验证**：`gh repo set-default` 后 `gh repo view --json nameWithOwner` 输出 `zouv/custom-chatbox`，`gh release view v1.23.0-custom.3` 正常列出 title/tag/author 与两个资产。

@@ -78,7 +78,8 @@ Skill 定义位于 `.agents/skills/`（ZCode 原生发现路径，Claude/Cursor 
 |-------|---------|
 | `chatbox-record-change` | 完成任何自定义功能/修改后 |
 | `chatbox-merge-upstream` | 用户要求合并上游/升级版本/同步原仓库时 |
-| `chatbox-release` | 用户要求打包/发布/打 release/生成安装包时 |
+| `chatbox-release` | 用户要求打包/生成安装包/打 release 包时（只到产物为止） |
+| `chatbox-publish` | 用户要求发布到 GitHub/上传 release/传安装包时（产物 → GitHub Release） |
 
 详细触发场景见各 skill 的 `.agents/skills/<name>/SKILL.md`。
 

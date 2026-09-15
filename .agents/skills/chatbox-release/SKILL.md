@@ -1,33 +1,30 @@
 ---
 name: "chatbox-release"
-description: "Build and publish a release of the custom chatbox build to GitHub. Invoke when user asks to build, package, publish, release, or create a new version/tag of the custom chatbox."
+description: "Build and package the custom chatbox installer (version bump, lint/build, electron-builder). Invoke when user asks to build, package, or make an installer of the custom chatbox. 发布到 GitHub 请用 chatbox-publish skill."
 ---
 
-# Chatbox 自定义版本发布 Skill
+# Chatbox 自定义版本打包 Skill
 
-本 Skill 用于构建、打包并发布自定义 chatbox 版本到 GitHub Releases。
+本 Skill 用于把自定义 chatbox 源码**构建打包成安装包**，终点是 `release/build/Chatbox-<版本>-Setup.exe`。
+
+**发布到 GitHub（提交 / tag / Release / 上传产物）已拆到 `chatbox-publish` skill** —— 打完包后走那边。
 
 ## 触发条件
 
-- 用户说"发布"、"打包"、"打 release"、"build release"、"publish"
+- 用户说"打包"、"打个包"、"生成安装包"、"build"、"package"、"打 release 包"
 - 需要生成安装包分发给用户
-- 需要打一个版本 tag
+
+> 用户说"发布到 GitHub / 上传 release"时，本 skill 只负责打出包，发布走 `chatbox-publish`。
 
 ## 参数收集
 
-1. **版本号**：自定义版本后缀，格式为 `-custom.N`（N 为数字序号）。例如上游 v1.22.3 基础上的第 2 个自定义发布，版本号为 `v1.22.3-custom.2`。
-   - 如果用户未指定，从已有 tag 中读取最大序号后 +1。
+1. **版本号**：格式 `<上游版本>-custom.N`（N 为序号），例如 `v1.23.0-custom.3`。
+   - 用户未指定时，从已有 tag 读最大序号 +1：`git tag -l "v*-custom.*" --sort=-v:refname | head -5`
+   - **必须在打包前定好**——版本号内嵌在产物文件名（`Chatbox-<版本>-Setup.exe`）和 exe 资源里
 
 2. **构建平台**：
    - `current`（默认）：仅构建当前操作系统平台
    - `all`：构建 Windows + macOS + Linux（需要对应平台支持，macOS 构建需要在 Mac 上）
-   - 指定平台：`windows` / `mac` / `linux`
-
-3. **是否预发布**：默认否。如需 beta 标记，版本后缀使用 `-custom.N-beta`。
-
-4. **Release 说明内容**：
-   - 如果用户没有提供，AI 自动根据 CUSTOMIZATIONS/registry.md 和近期 commit 生成
-   - 需要包含：基于的上游版本、本次新增/修复的自定义功能、已知问题
 
 ## 前置检查
 
@@ -60,15 +57,13 @@ node --version    # 需要 v20.x - v22.x
 pnpm --version    # 需要 v10+
 ```
 
-### 4. GitHub 认证检查
+### 4. 产物占用检查
 
 ```bash
-# 检查 gh CLI 是否可用并已登录
-gh auth status
-# 如果未登录：gh auth login
+taskkill //F //IM Chatbox.exe    # 成品被占用会导致打包失败（manager.sh 会自动做）
 ```
 
-如果 `gh` CLI 不可用，提示用户安装（`winget install GitHub.cli`）或使用 GitHub Token 方式。
+> GitHub 认证检查已随发布流程移到 `chatbox-publish`。
 
 ---
 
@@ -80,194 +75,94 @@ gh auth status
 2. 确保版本号符合 `<upstream-version>-custom.N` 格式
 3. 同时检查 `release/app/package.json`（chatbox 可能有两层 package.json）并同步更新
 
-```bash
-# 使用 pnpm version 更新（会自动打 tag，但我们需要手动控制）
-# 或者直接编辑 package.json
-```
+**直接编辑文件，不要用 `pnpm version`**（它会自动 commit + 打 lightweight tag，与 `chatbox-publish` 的 annotated tag 流程冲突）。
 
-**必须更新的文件**（如果存在）：
+**必须更新的文件**：
 - `package.json` → version 字段
-- `release/app/package.json` → version 字段（chatbox 的 app 包版本）
-- 任何包含版本字符串的配置文件
+- `release/app/package.json` → version 字段（决定 electron-builder 产物文件名）
 
-### 第二步：运行完整检查和构建
-
-```bash
-# 安装依赖（确保 lock 文件一致）
-pnpm install --frozen-lockfile
-
-# 代码检查
-pnpm run lint
-# 如果有 lint 错误，修复后再继续；不要跳过
-
-# 运行测试
-pnpm run test
-# 测试失败时报告给用户，由用户决定是否继续
-
-# 生产构建（不打包，验证构建能通过）
-pnpm run build
-```
-
-### 第三步：更新 CUSTOMIZATIONS/registry.md 和生成 Release Notes
-
-在 CUSTOMIZATIONS/registry.md 头部更新：
-- `last_release_version` 字段
-- `last_release_date` 字段
-- `custom_version` 字段
-
-自动生成 Release Notes 并落盘到 `CUSTOMIZATIONS/release-notes/<custom-version>.md`（归档，随仓库提交）：
-
-```markdown
-## <custom-version> (<date>)
-
-基于上游 chatbox <upstream-version> 的自定义版本。
-
-### 自定义改动
-
-<根据 CUSTOMIZATIONS/registry.md 中所有 active 条目生成>
-
-- **<change-id>**: <功能描述>
-  - <详细说明>
-
-### 修复与改进
-
-<近期 commit 中非 custom 前缀的重要修复>
-
-### 已知问题
-
-<如有>
-
-### 下载
-
-- Windows: <安装包文件名>
-- macOS: <安装包文件名>
-- Linux: <安装包文件名>
-
----
-**完整自定义改动清单**：见 CUSTOMIZATIONS/registry.md
-**上游版本**：chatboxai/chatbox@<upstream-version>
-```
-
-### 第四步：打包构建
-
-根据目标平台执行打包：
+### 第二步：运行检查与构建
 
 ```bash
-# 当前平台打包
-pnpm run package
+# ⚠️ 不要无条件跑 pnpm install：它会重置 node_modules，冲掉 7za shim
+#   （CUSTOM-20260902-003），还可能触发 workspace 软链失效（pitfalls #10）。
+#   只有依赖真的变了才装，装完跑 `manager.sh install` 补 shim。
 
-# 所有平台打包（需要多平台构建环境）
-pnpm run package:all
+pnpm run lint     # 有 9 个既有 error（全在上游文件），只看有没有新增
+pnpm run test     # Windows 上有 16~31 个浮动失败（上游环境敏感用例）
+
+pnpm run build    # 生产构建
 ```
 
-构建产物通常在 `release/build/` 或 `dist/` 目录下（参考 electron-builder.yml 的配置）。
+**两条硬经验**：
+
+1. **别用管道看结果**：`pnpm run test 2>&1 | tail -60` 的退出码是 `tail` 的，**测试失败也返回 0**。一律重定向到文件再读：
+   ```bash
+   pnpm run test > /tmp/t.log 2>&1; echo "EXIT=$?"   # 看 EXIT 判断成败
+   grep -E "^ FAIL|Test Files|Tests " /tmp/t.log     # 再提取失败清单
+   ```
+2. **失败先判定是否基线**（判定方法见 `chatbox-publish` skill 坑点 5）：确认与本次改动无关后，把**实测数字**报给用户，由用户决定是否继续。
+
+### 第三步：打包构建
+
+> 打包前确认版本号已改（`package.json` + `release/app/package.json`），否则产物名仍是旧版本。
+> 更新 registry frontmatter 和写 release notes 属于发布环节，见 `chatbox-publish` skill。
+
+**一律走 manager.sh**（已内置 7za shim 检查、结束占用产物的 `Chatbox.exe`、electron-builder 失败后 15s 退避重试×3 防杀软锁文件）：
 
 ```bash
-# 确认构建产物
-LS release/build/
-# 或
-LS dist/
-# 或
-LS out/
+sh CUSTOMIZATIONS/scripts/manager.sh setup       # NSIS 安装包（推荐）
+sh CUSTOMIZATIONS/scripts/manager.sh unpacked    # 免安装目录包
+pnpm run package:all                             # 多平台（需对应平台环境）
+sh CUSTOMIZATIONS/scripts/manager.sh artifacts   # 看产物
 ```
 
-**记录生成的安装包文件路径**（用于上传）。
+产物目录：`release/build/`（由 `electron-builder.yml` 的 `directories.output` 决定，不要硬编码）。
 
-打包完成后进行**最小验证**：
-- Windows：确认生成了 `.exe` 安装包
-- macOS：确认生成了 `.dmg`（或 `.zip`）
-- Linux：确认生成了 `.AppImage`（或 `.deb`）
-
-### 第五步：提交版本变更和打 Tag
+**最小验证**：
 
 ```bash
-# 提交版本号更新
-git add package.json release/app/package.json
-git commit -m "chore(release): bump version to <custom-version>"
-
-# 打 annotated tag
-git tag -a "<custom-version>" -m "Release <custom-version>
-
-Based on upstream chatbox <upstream-version>
-
-Custom changes:
-- <change-id-1>: <desc>
-- <change-id-2>: <desc>
-..."
-
-# 推送到 origin
-git push origin custom/main
-git push origin "<custom-version>"
+sh CUSTOMIZATIONS/scripts/manager.sh artifacts
+powershell -NoProfile -Command "(Get-Item 'release\build\Chatbox-<版本>-Setup.exe').VersionInfo.FileVersion"
+# 应输出与版本号一致，例如 1.23.0-custom.3
 ```
 
-### 第六步：创建 GitHub Release
+打包耗时约 5~10 分钟。**开成后台任务、输出重定向到日志文件**，轮询关键行，不要用管道（见第二步的硬经验 1）。
+
+### 第四步：交接给 chatbox-publish
+
+打包完成后，后续的 commit / tag / push / GitHub Release 创建与产物上传**全部走 `chatbox-publish` skill**，本 skill 到此为止。
+
+快速衔接：
 
 ```bash
-# 创建 release 并上传所有构建产物
-gh release create "<custom-version>" \
-  <build-artifact-paths> \
-  --title "<custom-version>" \
-  --notes-file CUSTOMIZATIONS/release-notes/<custom-version>.md \
-  --target custom/main
+# 产物自检
+sh CUSTOMIZATIONS/scripts/manager.sh artifacts
+powershell -NoProfile -Command "(Get-Item 'release\build\Chatbox-<版本>-Setup.exe').VersionInfo.FileVersion"
+
+# 然后调用 chatbox-publish skill（或直接跑它的脚本）
+node CUSTOMIZATIONS/scripts/publish-release.mjs v<版本> --dry-run
 ```
 
-如果是预发布版本，添加 `--prerelease` 参数。
-
-构建产物路径示例（Windows）：
-- `release/build/Chatbox Setup <version>.exe`
-- `release/build/win-unpacked/` （不上传，只上传安装包）
-- `release/build/*.blockmap`（差量更新用，一并上传）
-
-### 第七步：验证发布
-
-1. 在浏览器中打开 release 页面确认上传成功
-2. 下载安装包验证文件大小和完整性
-3. 输出发布报告
-
-```
-=== Release 发布完成 ===
-版本：<custom-version>
-基于上游：<upstream-version>
-Tag：<custom-version>（已推送）
-Release URL：https://github.com/<owner>/<repo>/releases/tag/<custom-version>
-构建产物：
-- <filename> (<size>)
-- <filename> (<size>)
-```
+> 为什么拆分：本机没有 `gh` CLI，发布改走 Git Credential Manager token + GitHub REST API（已封装成 `CUSTOMIZATIONS/scripts/publish-release.mjs`），与打包的构建环境关注点完全不同。详见 `chatbox-publish` skill 的"坑点与经验"。
 
 ---
 
 ## 版本号规范
 
-```
-<upstream-version>-custom.<sequence>
-例如：v1.22.3-custom.1, v1.22.3-custom.2
-```
-
-大版本升级后序号重置：
-- 从 v1.22.x 升级到 v1.23.0 后，第一个发布为 `v1.23.0-custom.1`
-
-预发布版本：
-- Beta 版：`v1.22.3-custom.1-beta.1`
+格式 `<上游版本>-custom.<序号>`（如 `v1.23.0-custom.3`），跨大版本升级后序号重置。完整规范（含 beta 预发布与 tag 规则）见 `chatbox-publish` skill。
 
 ---
 
 ## 重要约束
 
-1. **不要跳过 lint/build 检查**：发布前必须通过所有检查
-2. **不要在有未提交改动时发布**：工作区必须干净
-3. **Tag 必须是 annotated tag**（`-a` 参数），不要使用 lightweight tag
-4. **构建产物不要提交到 git**：确保 `.gitignore` 中包含了 `release/build/`、`dist/`、`out/` 等目录
-5. **不要手动修改 pnpm-lock.yaml**：依赖问题通过 `pnpm install` 自动解决
-6. **大版本首次发布**：跨大版本升级后的第一个发布，标记为 beta（`-custom.1-beta.1`）供测试，验证后再发正式版
-7. **发布失败回滚**：
-   - 如果 tag 已创建但 release 上传失败：删除本地和远程 tag 后重试
-     ```bash
-     git tag -d <version>
-     git push origin :refs/tags/<version>
-     ```
-   - 如果 release 已发布但发现严重问题：标记为 deprecated 并发新版本，不要删除已有 release
-8. **发布由用户明确发起**：本 skill 的 commit/tag/push 属于发布流程的固有步骤，用户要求发布时按步骤执行；流程中止（检查失败、产物异常）时停在未提交状态先报告
+1. **不要跳过 lint/build**：打包前构建必须通过；lint/test 的既有失败按第二步的方法判定，把实测数字报给用户
+2. **版本号先于打包**：`package.json` 与 `release/app/package.json` 两处都改
+3. **构建产物不要提交到 git**：`.gitignore` 已含 `release/build/`、`dist/`、`out/`
+4. **不要手动修改 pnpm-lock.yaml**：依赖问题用 `pnpm install` 解决
+5. **不要跑无谓的 `pnpm install`**：会冲掉 7za shim（见第二步）
+6. **打包由用户明确发起**：流程中止（构建失败、产物异常）时停下报告
+7. **commit / tag / push 不在本 skill 范围**：全部走 `chatbox-publish`
 
 ## 构建产物目录参考
 
