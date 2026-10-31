@@ -51,12 +51,14 @@ pnpm run test       # Vitest 测试
 
 ## Git 分支规则
 
+- **直接在主分支开发**：开发时直接在主分支提交，不要另建功能 / 修复分支；只有用户明确要求时才新建分支。
+
 | 分支 | 用途 | 谁可以写入 |
 |------|------|-----------|
 | `upstream/main` | 跟踪上游 chatboxai/chatbox | 只读（仅 sync 脚本可更新） |
 | `vendor/<version-line>` | 上游版本基线 | 只读（仅 sync 脚本可更新） |
 | `custom/main` | 自定义开发主分支 | AI Agent 开发合并 |
-| `feature/<name>` | 功能开发分支 | AI Agent 临时分支 |
+| `feature/<name>` | 仅用户明确要求时临时使用 | 用户明确授权 |
 | `release/<tag>` | 发布分支 | release skill 管理 |
 
 - **remote**：`origin` → 自定义 GitHub 仓库；`upstream` → https://github.com/chatboxai/chatbox.git
